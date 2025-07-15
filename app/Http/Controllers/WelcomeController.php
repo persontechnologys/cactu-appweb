@@ -34,5 +34,8 @@ class WelcomeController extends Controller
     public function privacidad()  {
         return view('privacidad');
     }
+    public function manual()  {
+        return view('manual');
+    }   
   
 }

@@ -37,7 +37,7 @@ Route::get('/', function () {
 
 
 
-Route::get('manual-de-usuario',[WelcomeController::class,'manual'])->name('manual');
+
 Route::get('privacidad',[WelcomeController::class,'privacidad'])->name('privacidad');
 
 Auth::routes(['register' => false]);
@@ -46,6 +46,9 @@ Auth::routes(['register' => false]);
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // manual de usuario
+    Route::get('manual-de-usuario',[WelcomeController::class,'manual'])->name('manual');
+
     Route::get('home', [HomeController::class, 'index'])->name('home');
     Route::post('validarec', [HomeController::class, 'validarec'])->name('validarec');
 
