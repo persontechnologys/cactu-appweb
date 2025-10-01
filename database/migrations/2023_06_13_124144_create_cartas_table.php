@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('archivo_pdf')->nullable();
             $table->string('archivo_imagen_ninio')->nullable();
             $table->string('archivo_familia_ninio')->nullable();
-            $table->date('fecha_respondida')->nullable();
+            $table->dateTime('fecha_respondida')->nullable();
             $table->foreignId('ninio_id')->constrained('ninios');
             $table->foreignId('user_id')->constrained('users');
             $table->foreignId('comunidad_id')->constrained('comunidads');

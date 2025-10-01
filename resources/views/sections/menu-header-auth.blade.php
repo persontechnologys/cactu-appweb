@@ -388,11 +388,11 @@
         </a>
 
         <div class="dropdown-menu dropdown-menu-end">
-            {{-- <a href="#" class="dropdown-item">
+            <a href="{{ route('perfil') }}" class="dropdown-item">
                 <i class="ph-user-circle me-2"></i>
-                My profile
+                Mi perfil
             </a>
-            <a href="#" class="dropdown-item">
+            {{-- <a href="#" class="dropdown-item">
                 <i class="ph-currency-circle-dollar me-2"></i>
                 My subscription
             </a>
@@ -404,9 +404,9 @@
                 <i class="ph-envelope-open me-2"></i>
                 My inbox
                 <span class="badge bg-primary rounded-pill ms-auto">26</span>
-            </a>
+            </a> --}}
             <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item">
+            {{-- <a href="#" class="dropdown-item">
                 <i class="ph-gear me-2"></i>
                 Account settings
             </a> --}}

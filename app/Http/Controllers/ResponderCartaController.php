@@ -25,8 +25,8 @@ class ResponderCartaController extends Controller
     {
         
         try {
-            $ninio_decrypt = Crypt::decryptString($ninio_numero_child);
-            $ninio=Ninio::where('numero_child',$ninio_decrypt)->firstOrFail();
+            // $ninio_decrypt = Crypt::decryptString($ninio_numero_child);
+            $ninio=Ninio::where('numero_child',$ninio_numero_child)->firstOrFail();
             $data = array(
                 'ninio'=>$ninio,
                 'cartas'=>$ninio->cartas->where('estado','Enviado')

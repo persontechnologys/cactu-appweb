@@ -23,8 +23,26 @@ class CartaController extends Controller
      */
     public function index(CartaDataTable $dataTable)
     {
+        // Obtener datos para los filtros
+        $tiposCartas = ['Contestación', 'Agradecimiento', 'Presentación', 'Iniciada'];
+        $estados = ['Enviado', 'Respondida'];
         
-        return $dataTable->render('cartas.index');
+        // Obtener comunidades según el rol del usuario
+        $user = Auth::user();
+        if ($user->hasRole('ADMINISTRADOR')) {
+            $comunidades = \App\Models\Comunidad::select('id', 'nombre')->orderBy('nombre')->get();
+            $gestores = \App\Models\User::select('id', 'name', 'email')->orderBy('name')->get();
+        } else {
+            $comunidades = $user->comunidades()->select('id', 'nombre')->orderBy('nombre')->get();
+            $gestores = collect([$user]); // Solo el usuario actual
+        }
+
+        return $dataTable->render('cartas.index', compact(
+            'tiposCartas',
+            'estados', 
+            'comunidades',
+            'gestores'
+        ));
     }
 
     /**

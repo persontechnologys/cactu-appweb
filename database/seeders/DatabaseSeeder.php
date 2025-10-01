@@ -19,11 +19,15 @@ class DatabaseSeeder extends Seeder
         $role = Role::updateOrCreate(['name' => config('app.ROLE_ADMIN')]);
         Role::updateOrCreate(['name' => config('app.ROLE_GESTOR')]);
         
-        $user = User::updateOrCreate([
-            'name' => config('app.EMAIL_ADMIN'),
-            'email' => config('app.EMAIL_ADMIN'),
-            'password' => Hash::make(config('app.PASSWORD_ADMIN'))
-        ]);
+        // crear o actualizar usuario por email si no existe
+        $user = User::updateOrCreate(
+            ['email' => config('app.EMAIL_ADMIN')],
+            [
+                'name' => config('app.EMAIL_ADMIN'),
+                'email' => config('app.EMAIL_ADMIN'),
+                'password' => Hash::make(config('app.PASSWORD_ADMIN')),
+            ]
+        );
 
         $user->syncRoles($role);
 

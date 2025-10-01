@@ -7,6 +7,11 @@ use Diglactic\Breadcrumbs\Generator as BreadcrumbTrail;
 Breadcrumbs::for('home', function (BreadcrumbTrail $trail) {
     $trail->push('Inicio', url('/'));
 });
+// perfil
+Breadcrumbs::for('perfil', function (BreadcrumbTrail $trail) {
+    $trail->parent('home');
+    $trail->push('Perfil', route('perfil'));
+});
 
 // login
 Breadcrumbs::for('login', function (BreadcrumbTrail $trail) {

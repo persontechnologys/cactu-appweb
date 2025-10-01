@@ -10,6 +10,23 @@ use Illuminate\Support\Facades\Storage;
 class Carta extends Model
 {
     use HasFactory;
+    protected $casts = [
+        'created_at'       => 'datetime',
+        'updated_at'       => 'datetime',
+        'fecha_respondida' => 'datetime', // <<— añade esto
+    ];
+
+    // crea un cast o metodo para colores por tipo de carta
+    public function getColorAttribute()
+    {
+        return match ($this->tipo) {
+            'Contestación' => 'primary',
+            'Agradecimiento' => 'purple',
+            'Presentación' => 'info',
+            'Iniciada' => 'pink',
+            default => 'secondary',
+        };
+    }
 
     protected $fillable=[
         'tipo',
@@ -82,6 +99,33 @@ class Carta extends Model
     public function boletas()
     {
         return $this->hasMany(Boleta::class);
+    }
+
+    /**
+     * Obtener el icono según el tipo de carta
+     */
+    public function getIconoAttribute()
+    {
+        return match ($this->tipo) {
+            'Contestación' => 'ph-arrow-bend-up-left',
+            'Agradecimiento' => 'ph-heart',
+            'Presentación' => 'ph-user-circle',
+            'Iniciada' => 'ph-play-circle',
+            default => 'ph-envelope-simple',
+        };
+    }
+
+    /**
+     * Obtener el estado formateado con color
+     */
+    public function getEstadoColorAttribute()
+    {
+        return match ($this->estado) {
+            'Respondida' => 'success',
+            'Enviado' => 'warning',
+            'Pendiente' => 'danger',
+            default => 'secondary',
+        };
     }
     
 

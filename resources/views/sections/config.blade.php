@@ -55,7 +55,25 @@
             </label>
         </div>
 
+        <div class="fw-semibold mb-2">Barra lateral</div>
+        <div class="list-group mb-3">
+            <label class="list-group-item list-group-item-action form-check border-width-1 rounded mb-0">
+                <div class="d-flex flex-fill my-1">
+                    <div class="form-check-label d-flex me-2">
+                        <i class="ph ph-sidebar ph-lg me-3"></i>
+                        <div>
+                            <span class="fw-bold">Predeterminada </span>
+                            <div class="text-muted">Redimensionado</div>
+                        </div>
+                    </div>
+                    <input type="checkbox" name="menu_redimensionar" {{ Auth::user()->menu_responsivo ? 'checked' : '' }} value="rtl" class="form-check-input cursor-pointer m-0 ms-auto">
+                </div>
+            </label>
+        </div>
+        
     </div>
+
+    
 
     @auth
     <div class="border-top text-center py-2 px-3">

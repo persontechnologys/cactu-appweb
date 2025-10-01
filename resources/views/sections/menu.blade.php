@@ -1,5 +1,6 @@
 
-<div class="sidebar sidebar-dark sidebar-main sidebar-expand-lg">
+<div class="sidebar sidebar-dark sidebar-main sidebar-expand-lg  {{ Auth::user()->menu_responsivo ? 'sidebar-main-resized' : '' }}" id="menu_responsive">
+
 
     <!-- Sidebar content -->
     <div class="sidebar-content">

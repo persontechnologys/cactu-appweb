@@ -21,6 +21,7 @@ return new class extends Migration
             $table->timestamps();
             $table->enum('estado',['ACTIVO','INACTIVO'])->nullable();
             $table->string('provincia')->nullable();
+            $table->boolean('menu_responsivo')->default(false);
         });
     }
 

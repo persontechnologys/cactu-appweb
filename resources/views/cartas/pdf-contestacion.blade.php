@@ -155,7 +155,7 @@
                     </tr>
                     <tr>
                         <td style="
-                            background-image: url({{ public_path($carta->archivo_imagen_ninio_link) }});
+                            background-image: url({{ public_path($carta->archivo_imagen_ninio_link??'images/no-carta-imagen.png') }});
                             background-repeat: no-repeat;
                             background-size: contain;
                             background-size: 300px 400px;
@@ -176,14 +176,14 @@
                 <tr>
                     @if ($carta->archivo_imagen)
                         <td>
-                            <img src="{{ public_path($carta->archivo_imagen_link) }}" />
+                            <img src="{{ public_path($carta->archivo_imagen_link??'images/no-carta-imagen.png') }}" />
                         </td>
                     @endif
         
                     @if ($carta->boletas->count() > 0)
                         @foreach ($carta->boletas as $index => $boleta)
                             <td>
-                                <img src="{{ public_path($boleta->archivo_imagen_link) }}" />
+                                <img src="{{ public_path($boleta->archivo_imagen_link??'images/no-carta-imagen.png') }}" />
                             </td>
                             @if (($index + 1) % 2 == 0)
                                 </tr><tr>

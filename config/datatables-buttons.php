@@ -61,8 +61,8 @@ return [
         'sPaginationType'=> 'full_numbers',
         'autoWidth' => false,
         'lengthMenu'=> [
-            [ 10, 25, 50, 100 ],
-            [ '10 filas', '25 filas', '50 filas', '100 filas' ]
+            [ 10, 25, 50, 100 , -1 ],
+            [ '10 filas', '25 filas', '50 filas', '100 filas', 'Todas las filas' ]
         ],
         'order'   => [[0, 'desc']],
         'language'=> [

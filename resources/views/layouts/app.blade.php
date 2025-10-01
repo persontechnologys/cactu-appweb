@@ -314,6 +314,7 @@
         
         $('table').on('draw.dt', function() {
 			$('[data-bs-popup="tooltip"]').tooltip();
+			$('[data-bs-popup="popover"]').popover();
 		})
        
         function eliminar(arg){
@@ -341,6 +342,29 @@
                 }
             });
         }
+		// cuando se cambia el estado del checkbox en config.blade.php
+		// menu_redimensionar checkbox
+		// div id= menu_responsive add class sidebar-main-resized when checked and remove when unchecked
+		$('input[name="menu_redimensionar"]').on('change', function() {
+			if($(this).is(':checked')){
+				$('#menu_responsive').addClass('sidebar-main-resized');
+			}else{
+				$('#menu_responsive').removeClass('sidebar-main-resized');
+			}
+
+			// ajax post to route perfil.menu_responsivo
+			$.ajax({
+				url: "{{ route('perfil.menu_responsivo') }}",
+				type: 'POST',
+				success: function(response) {
+					console.log(response);
+				},
+				error: function(xhr) {
+					console.log(xhr.responseText);
+				}
+			});
+		});
+
     </script>
 	
 	@stack('scripts')

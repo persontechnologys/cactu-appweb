@@ -6,6 +6,7 @@ use App\Http\Controllers\GestorController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MisNiniosController;
 use App\Http\Controllers\NinioController;
+use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\ResponderCartaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WelcomeController;
@@ -46,6 +47,12 @@ Auth::routes(['register' => false]);
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // perfil de usuario
+    Route::get('perfil', [PerfilController::class, 'perfil'])->name('perfil');
+    Route::post('perfil-guardar', [PerfilController::class, 'guardarPerfil'])->name('perfil.guardar');
+    Route::post('perfil-cambiar-password', [PerfilController::class, 'cambiarPassword'])->name('perfil.cambiar-password');
+    Route::post('perfil-menu-responsivo', [PerfilController::class, 'menuResponsivo'])->name('perfil.menu_responsivo');
+
     // manual de usuario
     Route::get('manual-de-usuario',[WelcomeController::class,'manual'])->name('manual');
 
