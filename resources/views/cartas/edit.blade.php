@@ -17,6 +17,7 @@
         </div>
         <div class="card-footer text-muted">
             <button type="submit" class="btn btn-primary">Actualizar</button>
+            <a href="{{ route('cartas.show', $carta) }}" class="btn btn-secondary">Cancelar</a>
         </div>
     </div>
 </form>

@@ -131,7 +131,7 @@
         </div>
 
         <div class="fecha">
-            <h3>Fecha {{ \Carbon\Carbon::parse($carta->fecha_respuesta)->format('d/M/Y') }}</h3>
+            <h3>Fecha {{ \Carbon\Carbon::parse($carta->fecha_respondida)->format('d/M/Y') }}</h3>
         </div>
 
         <div class="cuerpo">

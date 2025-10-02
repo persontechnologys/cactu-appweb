@@ -208,7 +208,7 @@ class CartaController extends Controller
         return redirect()->route('cartas.index');
     }
 
-    public function verPDF($id) {
+    public function verPDF($id,$version=null) {
         
         $carta=Carta::findOrFail($id);
         $title='CARTA DE '.$carta->ninio->nombres_completos.'.pdf';
@@ -217,14 +217,15 @@ class CartaController extends Controller
             'title'=>$title
         );
         
-        $pdf = PDF::loadView('cartas.verpdf', $data)
-        // ->setOption('page-size', 'A4')
-        // ->setOption('orientation', 'Portrait')
-        // ->setOption('margin-top', '0mm')
-        // ->setOption('margin-right', '0mm')
-        // ->setOption('margin-bottom', '0mm')
-        // ->setOption('margin-left', '0mm')
-        ;
+        if($version && $version=='v2'){
+            $pdf = PDF::loadView('cartas.v2.verpdf', $data);
+        }else{
+            $pdf = PDF::loadView('cartas.verpdf', $data);
+        }
+        
+
+        
+
         return $pdf->inline($title );
     }
     

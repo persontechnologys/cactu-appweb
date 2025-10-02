@@ -71,7 +71,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('mis-ninios', MisNiniosController::class);
     // cartas
     Route::resource('cartas', CartaController::class);
-    Route::get('cartas-ver-carta-pdf/{id}', [CartaController::class, 'verPDF'])->name('cartas.ver-carta-pdf');
+    Route::get('cartas-ver-carta-pdf/{id}/{version?}', [CartaController::class, 'verPDF'])->name('cartas.ver-carta-pdf');
     Route::get('cartas-ver-archivo/{id}/{tipo}', [CartaController::class, 'verArchivo'])->name('cartas.ver-archivo');
     Route::get('cartas-documentos/{id}', [CartaController::class, 'documentos'])->name('cartas.documentos');
     Route::get('cartas-descargar-pdf/{id}', [CartaController::class, 'descargarPdf'])->name('cartas.descargarPdf');

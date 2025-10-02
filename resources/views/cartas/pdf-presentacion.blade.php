@@ -144,7 +144,7 @@
     <div class="contenedor">
 
         <div class="fecha" style="padding-top: 12em; text-align: left;">
-            <p style="text-align: left;">Fecha {{ \Carbon\Carbon::parse($carta->fecha_respuesta)->format('d/M/Y') }} </p>
+            <p style="text-align: left;">Fecha {{ \Carbon\Carbon::parse($carta->fecha_respondida)->format('d/M/Y') }} </p>
         </div>
 
         <div class="cuerpo">
@@ -176,7 +176,7 @@
                 <tr>
                     @if ($carta->archivo_imagen_ninio)
                         <td style="
-                            background: url({!! public_path($carta->archivo_imagen_ninio_link) !!});
+                            background: url({!! public_path($carta->archivo_imagen_ninio_link??'img/no_carta_imagen.png') !!});
                             background-repeat: no-repeat;
                             background-size: contain;
                             background-size: 100% 100%;
@@ -191,7 +191,7 @@
                     
                     @if ($carta->archivo_familia_ninio)
                         <td style="
-                            background: url({!! public_path($carta->archivo_familia_ninio_link) !!});
+                            background: url({!! public_path($carta->archivo_familia_ninio_link??'img/no_carta_imagen.png') !!});
                             background-repeat: no-repeat;
                             background-size: contain;
                             background-size: 100% 100%;
@@ -213,14 +213,14 @@
                 <tr>
                     @if ($carta->archivo_imagen)
                         <td>
-                            <img src="{{ public_path($carta->archivo_imagen_link) }}" />
+                            <img src="{{ public_path($carta->archivo_imagen_link??'img/no_carta_imagen.png') }}" />
                         </td>
                     @endif
         
                     @if ($carta->boletas->count() > 0)
                         @foreach ($carta->boletas as $index => $boleta)
                             <td>
-                                <img src="{{ public_path($boleta->archivo_imagen_link) }}" />
+                                <img src="{{ public_path($boleta->archivo_imagen_link??'img/no_carta_imagen.png') }}" />
                             </td>
                             @if (($index + 1) % 2 == 0)
                                 </tr><tr>

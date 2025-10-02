@@ -13,7 +13,42 @@
 @endsection
 
 @section('content')
-<div class="card">
+
+
+{{-- crear dos columnas --}}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            Carta de {{ $carta->tipo }}, del Niñ@: {{ $carta->ninio->nombres_completos }} (v1)
+          </div>
+          <div class="card-body">
+            <div class="ratio ratio-16x9">
+            <iframe src="{{ route('cartas.ver-carta-pdf',$carta->id) }}" class="card-img-top" allowfullscreen frameborder="0" mozallowfullscreen></iframe>
+          </div>
+          </div>
+        </div>
+        
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            Carta de {{ $carta->tipo }}, del Niñ@: {{ $carta->ninio->nombres_completos }} (v2)
+            
+
+          </div>
+          <div class="card-body">
+            <div class="ratio ratio-16x9">
+              <iframe src="{{ route('cartas.ver-carta-pdf',[$carta->id,'v2']) }}" class="card-img-top" allowfullscreen frameborder="0" mozallowfullscreen></iframe>
+            </div>
+          </div>
+        </div>
+        
+    </div>
+</div>
+
+
+{{-- <div class="card">
   <div class="card-header">
     Carta de {{ $carta->tipo }}, del Niñ@: {{ $carta->ninio->nombres_completos }}
   </div>
@@ -32,6 +67,6 @@
               </div>
         </div>
     </div>
-</div>
+</div> --}}
 
 @endsection

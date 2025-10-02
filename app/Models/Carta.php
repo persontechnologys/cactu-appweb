@@ -16,6 +16,18 @@ class Carta extends Model
         'fecha_respondida' => 'datetime', // <<— añade esto
     ];
 
+    // Accessor: fecha_respondida in Spanish (e.g., "2 de octubre de 2025 14:30")
+    public function getFechaRespondidaFormattedAttribute()
+    {
+        if (!$this->fecha_respondida) {
+            return null;
+        }
+
+        return $this->fecha_respondida                    // asegura español
+            ->isoFormat('D [de] MMMM [de] YYYY [a las] HH:mm'); // 2 de octubre de 2025 14:30
+    }
+
+
     // crea un cast o metodo para colores por tipo de carta
     public function getColorAttribute()
     {
