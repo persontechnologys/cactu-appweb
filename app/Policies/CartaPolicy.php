@@ -26,7 +26,7 @@ class CartaPolicy
     }
     public function eliminar(User $user, Carta $carta): bool
     {
-        
+
         if($user->hasRole('ADMINISTRADOR')){
             return true;
         }else{
@@ -36,8 +36,26 @@ class CartaPolicy
                 return false;
             }
         }
-        
+
         return false;
+    }
+
+    // ver/editar el detalle de la carta (CartaController::show/edit/update):
+    // mismo criterio que 'eliminar' (dueño o ADMINISTRADOR). Ver SEG-007.
+    public function view(User $user, Carta $carta): bool
+    {
+        if($user->hasRole('ADMINISTRADOR')){
+            return true;
+        }
+        return $user->id==$carta->user_id;
+    }
+
+    public function update(User $user, Carta $carta): bool
+    {
+        if($user->hasRole('ADMINISTRADOR')){
+            return true;
+        }
+        return $user->id==$carta->user_id;
     }
 
 

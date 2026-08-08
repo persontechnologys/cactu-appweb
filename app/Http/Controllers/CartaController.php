@@ -152,7 +152,8 @@ class CartaController extends Controller
      */
     public function show(Carta $carta)
     {
-        
+        $this->authorize('view',$carta);
+
         return view('cartas.show',['carta'=>$carta]);
     }
 
@@ -161,6 +162,7 @@ class CartaController extends Controller
      */
     public function edit(Carta $carta)
     {
+        $this->authorize('update',$carta);
         return view('cartas.edit',['carta'=>$carta]);
     }
 
@@ -169,6 +171,7 @@ class CartaController extends Controller
      */
     public function update(Request $request, Carta $carta)
     {
+        $this->authorize('update',$carta);
         $carta->detalle=$request->detalle;
         $carta->save();
         Session::flash('success','Carta de '.$carta->tipo.' actualizado exitosamente.!');
