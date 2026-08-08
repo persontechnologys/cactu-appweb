@@ -20,13 +20,17 @@ class WelcomeController extends Controller
     }
 
     public function descargarCartaPdf($id) {
-        $carta=Carta::findOrFail($id);
+        try {
+            $carta=Carta::findOrFail(Crypt::decryptString($id));
+        } catch (DecryptException $e) {
+            return response()->json(['error'=>'Carta no encontrada'], 404);
+        }
         $title='CARTA DE '.$carta->ninio->nombres_completos.'.pdf';
         $data = array(
             'carta'=>$carta,
             'title'=>$title
         );
-        
+
         $pdf = PDF::loadView('cartas.verpdf', $data) ->setOption('margin-top', 5) ->setOption('margin-bottom', 1);
         return $pdf->download($title );
     }

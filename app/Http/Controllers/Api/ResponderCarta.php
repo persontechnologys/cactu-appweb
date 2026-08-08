@@ -36,7 +36,7 @@ class ResponderCarta extends Controller
                 'estado'=>$carta->estado,
                 'edad' => Carbon::parse($carta->ninio->fecha_nacimiento)->age??0,
                 'archivo'=>$carta->archivo_pdf?route('verarchivopdfporninio',Crypt::encryptString($carta->id)):'no',
-                'carta'=>$carta->estado=='Respondida'?route('descargarCartaPdf',$carta->id):'no',
+                'carta'=>$carta->estado=='Respondida'?route('descargarCartaPdf',Crypt::encryptString($carta->id)):'no',
                 'carta_nombre'=>$carta->estado=='Respondida'?'Carta-de-'.$carta->tipo.'-'.$carta->id.'.pdf' :'',
                 'eliminado'=>$carta->eliminado
             ]);
