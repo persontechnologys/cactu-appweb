@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use PDF;
 class CartaController extends Controller
@@ -134,7 +135,8 @@ class CartaController extends Controller
             return redirect()->route('cartas.index');
         } catch (\Throwable $th) {
             DB::rollBack();
-            Session::flash('info','Carta no enviado'.$th->getMessage());
+            Log::error('Error al enviar carta: '.$th->getMessage());
+            Session::flash('info','Carta no enviado, vuelva a intentar o consulte con administrador.');
             return redirect()->back()->withInput();
         }
 
@@ -206,7 +208,8 @@ class CartaController extends Controller
             }
             Session::flash('success','Carta eliminado.!');
         } catch (\Throwable $th) {
-            Session::flash('info','Carta no eliminado.!'.$th->getMessage());
+            Log::error('Error al eliminar carta: '.$th->getMessage());
+            Session::flash('info','Carta no eliminado.!');
         }
         return redirect()->route('cartas.index');
     }

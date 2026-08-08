@@ -54,6 +54,12 @@
 
 `CartaPolicy::responderCartaXninio` solo valida el estado de la carta, no la identidad de quien responde. Al inspeccionar `ResponderCartaController` (flujo web `cartas-ninio.*`) se confirmó que esas rutas están **fuera** del grupo `auth`/`verified` — no existe niño autenticado en ese flujo; la única protección es el ID de carta cifrado en la URL. No hay una identidad real contra la cual validar sin rediseñar el flujo (por ejemplo, exigir y verificar el `numero_child` cifrado en `guardarArchivo`, tal como ya hace `ResponderCartaController::ver()`). Se deja documentado como pendiente en `docs/auditoria/problemas-detectados.md` en vez de aplicar un cambio apresurado que podría romper enlaces ya enviados a patrocinadores/niños.
 
+### SEG-008 — Mensajes de excepción expuestos al usuario final
+
+**Cambio:** en `UserController::store/update`, `CartaController::store/destroy`, `MisNiniosController::destroy` y `Api\ResponderCarta::guardarCarta`, se retira `.$th->getMessage()` de los mensajes flash y respuestas JSON de error, y se añade `Log::error()` con el detalle real de la excepción para diagnóstico interno.
+**Archivos:** `app/Http/Controllers/UserController.php`, `app/Http/Controllers/CartaController.php`, `app/Http/Controllers/MisNiniosController.php`, `app/Http/Controllers/Api/ResponderCarta.php`.
+**Pruebas:** `tests/Feature/Seguridad/MensajesErrorTest.php` (caso representativo vía API; los otros 5 puntos siguen el mismo patrón, verificado por revisión de código).
+
 ### Infraestructura de pruebas
 
 Se habilita sqlite en memoria para Feature tests (`phpunit.xml`, antes usaba la conexión mysql real por defecto porque estaba comentada) y se retira `BCRYPT_ROUNDS=4` (entraba en conflicto con el cast `hashed` de `User` al validar hashes de bcrypt pre-generados con costo 10 en `UserFactory`). Se añade `tests/Concerns/CreaUsuariosDePrueba.php` como trait reutilizable para crear usuarios ADMINISTRADOR/GESTOR y comunidades de prueba.

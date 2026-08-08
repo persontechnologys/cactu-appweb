@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -65,7 +66,8 @@ class UserController extends Controller
             return redirect()->route('usuarios.index');
         } catch (\Throwable $th) {
             DB::rollBack();
-            return back()->withInput()->with('danger','Ocurrio un error, vuelva intentar o consulte con administrador.'.$th->getMessage());
+            Log::error('Error al guardar usuario: '.$th->getMessage());
+            return back()->withInput()->with('danger','Ocurrio un error, vuelva intentar o consulte con administrador.');
         }
         
     }
@@ -123,7 +125,8 @@ class UserController extends Controller
             return redirect()->route('usuarios.index')->with('success','Usuario actualizado.');
         } catch (\Throwable $th) {
             DB::rollBack();
-            return back()->withInput()->with('danger','Ocurrio un error, vuelva intentar o consulte con administrador.'.$th->getMessage());
+            Log::error('Error al actualizar usuario: '.$th->getMessage());
+            return back()->withInput()->with('danger','Ocurrio un error, vuelva intentar o consulte con administrador.');
         }
     }
 

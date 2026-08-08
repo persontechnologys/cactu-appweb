@@ -9,6 +9,7 @@ use App\Notifications\EnviarCartaRespondidaGestor;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 
@@ -222,7 +223,8 @@ class ResponderCarta extends Controller
 
         } catch (\Throwable $th) {
             DB::rollBack();
-            return response()->json(['error'=>'Carta no registrado vuelva intentar'.$th->getMessage()]);
+            Log::error('Error al guardar carta: '.$th->getMessage());
+            return response()->json(['error'=>'Carta no registrado vuelva intentar']);
         }
     }
 

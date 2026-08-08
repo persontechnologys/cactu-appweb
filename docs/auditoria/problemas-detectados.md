@@ -117,6 +117,20 @@
 
 ---
 
+**ID:** SEG-008
+**Módulo:** Usuarios / Cartas / Niños
+**Problema:** mensajes de excepción (`$th->getMessage()`) expuestos al usuario final
+**Tipo:** SEGURIDAD
+**Severidad:** MEDIO
+**Archivos afectados:** `app/Http/Controllers/UserController.php` (store/update), `app/Http/Controllers/CartaController.php` (store/destroy), `app/Http/Controllers/MisNiniosController.php` (destroy), `app/Http/Controllers/Api/ResponderCarta.php` (guardarCarta)
+**Comportamiento actual (previo a la corrección):** los mensajes flash y las respuestas JSON de error concatenaban `$th->getMessage()`, filtrando detalles internos (nombres de tablas/columnas, rutas de archivo) a la interfaz visible por el usuario.
+**Comportamiento esperado:** registrar el detalle técnico en el log del servidor; mostrar al usuario un mensaje genérico.
+**Solución aplicada:** se añade `Log::error(...)` con el mensaje real de la excepción en cada uno de los 6 puntos, y se retira `.$th->getMessage()` de los mensajes/flash/JSON de respuesta.
+**Impacto Web:** Medio. **Impacto API:** Medio.
+**Estado:** **Resuelto** (2026-08-08, rama `security/fase-2-hallazgos-criticos`). Ver `docs/cambios/changelog.md`. **Fase:** Fase 2 — Seguridad.
+
+---
+
 **ID:** ARQ-001
 **Módulo:** Cartas (Web + API móvil)
 **Problema:** Duplicación total de la lógica de armado de `detalle` y de guardado de respuestas entre `ResponderCartaController` (web) y `Api\ResponderCarta` (móvil)

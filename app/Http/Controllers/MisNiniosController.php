@@ -7,6 +7,7 @@ use App\Models\Ninio;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
 
@@ -121,7 +122,8 @@ class MisNiniosController extends Controller
             }
            
         } catch (\Throwable $th) {
-            Session::flash('info','Niño no eliminado.!'.$th->getMessage());
+            Log::error('Error al eliminar niño: '.$th->getMessage());
+            Session::flash('info','Niño no eliminado.!');
         }
         return redirect()->route('mis-ninios.index');
     }
