@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 class UserController extends Controller
 {
@@ -21,6 +22,7 @@ class UserController extends Controller
      */
     public function index(UserDataTable $dataTable)
     {
+        $this->authorize('viewAny', User::class);
         return $dataTable->render('usuarios.index');
     }
 
@@ -29,6 +31,7 @@ class UserController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', User::class);
         $data = array('roles' => Role::whereNotIn('name',[config('app.ROLE_ADMIN')])->get() );
         return view('usuarios.create',$data);
     }
@@ -38,17 +41,25 @@ class UserController extends Controller
      */
     public function store(StoreRq $request)
     {
+        $this->authorize('create', User::class);
+
+        // un usuario nunca puede autoasignarse ni asignar a otros el rol ADMINISTRADOR
+        // desde este formulario (ver SEG-001); mismo criterio ya aplicado en create().
+        $request->validate([
+            'roles.*' => Rule::in(Role::whereNotIn('name',[config('app.ROLE_ADMIN')])->pluck('id')),
+        ]);
+
         try {
             DB::beginTransaction();
             $user=User::create($request->except(['password']));
-            
+
             if($request->password){
                 $user->password=Hash::make($request->password);
                 $user->save();
             }
-            
+
             $user->assignRole($request->roles);
-            
+
             DB::commit();
             Session::flash('success','Usuario guardado.');
             return redirect()->route('usuarios.index');
@@ -73,6 +84,7 @@ class UserController extends Controller
     public function edit(string $id)
     {
         $user=User::findOrFail($id);
+        $this->authorize('update', $user);
         $data = array(
             'user' => $user,
             'roles'=>Role::get()
@@ -87,7 +99,14 @@ class UserController extends Controller
     public function update(UpdateRq $request, string $id)
     {
         $user=User::findOrFail($id);
-        
+        $this->authorize('update', $user);
+
+        // un usuario existente nunca puede ser ascendido a ADMINISTRADOR desde
+        // este formulario (ver SEG-001); mismo criterio ya aplicado en create().
+        $request->validate([
+            'roles.*' => Rule::in(Role::whereNotIn('name',[config('app.ROLE_ADMIN')])->pluck('id')),
+        ]);
+
         try {
             DB::beginTransaction();
             $user->update($request->except(['password']));
@@ -95,11 +114,11 @@ class UserController extends Controller
                 $user->password=Hash::make($request->password);
                 $user->save();
             }
-            
+
             if(!$user->hasRole(config('app.ROLE_ADMIN'))){
                 $user->syncRoles($request->roles);
             }
-            
+
             DB::commit();
             return redirect()->route('usuarios.index')->with('success','Usuario actualizado.');
         } catch (\Throwable $th) {
@@ -113,8 +132,9 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
+        $user = User::findOrFail($id);
+        $this->authorize('delete', $user);
         try {
-            $user = User::findOrFail($id);
             $user->delete();
             Session::flash('success','Usuario eliminado.!');
         } catch (\Throwable $th) {

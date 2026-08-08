@@ -59,14 +59,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('home', [HomeController::class, 'index'])->name('home');
     Route::post('validarec', [HomeController::class, 'validarec'])->name('validarec');
 
-    // usuarios
-    Route::resource('usuarios', UserController::class);
-    // comunidad
-    Route::resource('comunidad', ComunidadController::class);
-    // ninios
-    Route::resource('ninios', NinioController::class);
-    Route::get('ninios-importar', [NinioController::class, 'importar'])->name('ninios.importar');
-    Route::post('ninios-subir-importar', [NinioController::class, 'subirImportacion'])->name('ninios.subir-importar');
+    Route::middleware('role:'.config('app.ROLE_ADMIN'))->group(function () {
+        // usuarios
+        Route::resource('usuarios', UserController::class);
+        // comunidad
+        Route::resource('comunidad', ComunidadController::class);
+        // ninios
+        Route::resource('ninios', NinioController::class);
+        Route::get('ninios-importar', [NinioController::class, 'importar'])->name('ninios.importar');
+        Route::post('ninios-subir-importar', [NinioController::class, 'subirImportacion'])->name('ninios.subir-importar');
+    });
     // gestores
     Route::resource('mis-ninios', MisNiniosController::class);
     // cartas
