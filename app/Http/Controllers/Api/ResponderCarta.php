@@ -16,8 +16,11 @@ class ResponderCarta extends Controller
 {
 
     public function listaCartas (Request $request) {
-        $ninio = Ninio::find($request->userId);
-        
+        // se usa el niño resuelto por el token Sanctum, no el userId enviado
+        // por el cliente (ver SEG-004): de lo contrario cualquier niño
+        // autenticado podía leer el listado de cartas de otro niño.
+        $ninio = $request->user();
+
 
         $cartas = $ninio->cartas()
             ->where('eliminado',false)
