@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\DataTables\UserDataTable;
 use App\Http\Requests\User\StoreRq;
 use App\Http\Requests\User\UpdateRq;
-use App\Http\Requests\User\UserRqStore;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

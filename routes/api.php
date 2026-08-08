@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\ResponderCarta;
-use App\Http\Controllers\SensorDataController;
 use App\Http\Controllers\WelcomeController;
 use App\Models\Carta;
 use App\Models\Ninio;

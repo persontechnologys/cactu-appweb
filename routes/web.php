@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\CartaController;
 use App\Http\Controllers\ComunidadController;
-use App\Http\Controllers\GestorController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MisNiniosController;
 use App\Http\Controllers\NinioController;
