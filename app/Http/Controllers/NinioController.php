@@ -18,6 +18,7 @@ class NinioController extends Controller
      */
     public function index(NinioDataTable $dataTable)
     {
+        $this->authorize('viewAny', Ninio::class);
         return $dataTable->render('ninios.index');
     }
 
@@ -26,6 +27,7 @@ class NinioController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Ninio::class);
         $data = array('comunidades'=>Comunidad::get());
         return view('ninios.create',$data);
     }
@@ -35,7 +37,8 @@ class NinioController extends Controller
      */
     public function store(Request $request)
     {
-        
+        $this->authorize('create', Ninio::class);
+
         $request->validate([
             'numero_child'=>'required|unique:ninios,numero_child',
             'nombres_completos'=>'required|string|max:255',
@@ -65,8 +68,8 @@ class NinioController extends Controller
      */
     public function edit(Ninio $ninio)
     {
-        
-        
+        $this->authorize('update', $ninio);
+
         $data = array(
             'comunidades'=>Comunidad::get(),
             'ninio'=>$ninio
@@ -79,6 +82,8 @@ class NinioController extends Controller
      */
     public function update(Request $request, Ninio $ninio)
     {
+        $this->authorize('update', $ninio);
+
         $request->validate([
             'numero_child'=>'required|unique:ninios,numero_child,'.$ninio->id,
             'nombres_completos'=>'required|string|max:255',
@@ -100,6 +105,7 @@ class NinioController extends Controller
      */
     public function destroy(Ninio $ninio)
     {
+        $this->authorize('delete', $ninio);
         try {
             $ninio->delete();
             Session::flash('success','Niño eliminado.!');
@@ -110,13 +116,14 @@ class NinioController extends Controller
     }
     
     public function importar()  {
+        $this->authorize('create', Ninio::class);
 
         return view('ninios.importar');
-        
 
     }
 
     public function subirImportacion(Request $request){
+        $this->authorize('create', Ninio::class);
         set_time_limit(120);
         $users = (new FastExcel)->import($request->file('foto'), function ($line) {
             $comunidad= Comunidad::firstOrCreate([

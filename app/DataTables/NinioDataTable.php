@@ -4,6 +4,7 @@ namespace App\DataTables;
 
 use App\Models\Ninio;
 use Illuminate\Database\Eloquent\Builder as QueryBuilder;
+use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\EloquentDataTable;
 use Yajra\DataTables\Html\Builder as HtmlBuilder;
 use Yajra\DataTables\Html\Button;
@@ -41,7 +42,16 @@ class NinioDataTable extends DataTable
      */
     public function query(Ninio $model): QueryBuilder
     {
-        return $model->newQuery();
+        // defensa en profundidad (SEG-002): esta pantalla ya está restringida a
+        // ADMINISTRADOR por middleware de rol; se replica igualmente el filtro
+        // por comunidad usado en App\DataTables\Carta\NinioDataTable por si el
+        // método se invocara alguna vez fuera de esa ruta.
+        $user = Auth::user();
+        if ($user && $user->hasRole('ADMINISTRADOR')) {
+            return $model->newQuery();
+        }
+
+        return $model->whereIn('comunidad_id', $user?->comunidades->pluck('id') ?? []);
     }
 
     /**
