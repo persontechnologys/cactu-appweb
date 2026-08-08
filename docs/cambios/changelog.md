@@ -4,6 +4,40 @@
 
 ---
 
+## 2026-08-08 — Fase 1, Arquitectura: fundamentos de bajo riesgo
+
+**Fase:** Fase 1 — Arquitectura
+**Rama:** `security/fase-2-hallazgos-criticos`
+**Motivo:** preparar el terreno arquitectónico definido en `docs/fases/roadmap.md`, sin tocar comportamiento visible, autorizado explícitamente para continuar tras el cierre de Fase 2.
+
+### Middleware role/permission en Kernel
+
+Ya estaba resuelto: se registró como parte del commit de SEG-001 (Fase 2), antes de empezar esta fase. Sin acción adicional.
+
+### ARQ-002 — Extraer `RegistrarCartaAction` desde `CartaController::store`
+
+**Cambio:** se crea `app/Actions/RegistrarCartaAction.php` (primera Action del proyecto) con la creación de la `Carta`, el guardado de boletas y del PDF adjunto, antes concentrados en `CartaController::store`. El controller conserva la validación (`Request::validate`), invoca la Action, envía la notificación y prepara la respuesta — sin cambiar el mensaje de error ni el flujo de `try/catch` existente.
+**Archivos:** `app/Actions/RegistrarCartaAction.php` (nuevo), `app/Http/Controllers/CartaController.php`.
+**Impacto:** ninguno sobre comportamiento observable.
+**Pruebas:** `tests/Feature/Cartas/RegistrarCartaTest.php` (nuevo), escrito y verificado en verde **antes** del refactor, y sigue en verde después. Suite completa: 28/28 tests en verde.
+
+### ARQ-003 — Imports muertos
+
+**Cambio:** se eliminan 3 imports que apuntaban a clases inexistentes, confirmado por grep que no se usaban en ningún otro punto del archivo (`CLAUDE.md` sección 49): `GestorController` (`routes/web.php`), `SensorDataController` (`routes/api.php`) y `UserRqStore` (`app/Http/Controllers/UserController.php`, detectado en la misma revisión, no estaba en la ficha original de ARQ-003).
+**Archivos:** `routes/web.php`, `routes/api.php`, `app/Http/Controllers/UserController.php`.
+**Impacto:** ninguno. `route:list` sigue resolviendo las mismas 84 rutas; suite de tests en verde.
+
+### Convención de nombres de Policies (documentación, sin cambios de código)
+
+Se define la convención objetivo (verbos Laravel: `view`, `viewAny`, `create`, `update`, `delete`) para habilitar `authorizeResource()` a futuro. Al revisar `CartaPolicy` se encontró que sus métodos legacy en español (`ver`, `eliminar`) **no son alias** de los métodos Laravel ya agregados en Fase 2 (`view`, `update`) — tienen lógica distinta. No se renombra nada en esta fase; se documenta como `ARQ-004` en `docs/auditoria/problemas-detectados.md` y como decisión en `docs/cambios/decisiones-arquitectura.md` (nuevo archivo), pendiente de una decisión de negocio antes de tocar esos métodos.
+**Archivos:** `docs/cambios/decisiones-arquitectura.md` (nuevo), `docs/auditoria/problemas-detectados.md`.
+
+### Qué no se hizo en esta fase
+
+No se creó un `Service` de almacenamiento de archivos (mencionado como idea en la ficha original de ARQ-002, pero fuera del alcance que el roadmap definió para Fase 1). No se convirtió la validación de `store()` a un Form Request. No se renombraron los métodos de `CartaPolicy`. No se pusheó la rama ni se abrió PR (decisión del usuario).
+
+---
+
 ## 2026-08-08 — Fase 2, Seguridad: hallazgos CRÍTICO y ALTO
 
 **Fase:** Fase 2 — Seguridad

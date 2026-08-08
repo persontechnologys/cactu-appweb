@@ -157,6 +157,7 @@
 **Solución propuesta:** Extraer a una Action (`RegistrarCartaAction`) y un `Service` de almacenamiento de archivos, siguiendo la arquitectura objetivo de `CLAUDE.md`. No se implementa aún — solo se documenta (regla "primero comprender, después modificar").
 **Impacto Web:** Bajo (funciona, pero es difícil de probar y mantener). **Impacto API:** No aplica. **Impacto React Native:** No aplica.
 **Fase sugerida:** Fase 1 — Arquitectura.
+**Estado:** **Resuelto parcialmente** (2026-08-08, rama `security/fase-2-hallazgos-criticos`). Se extrajo `RegistrarCartaAction`, con test de regresión (`tests/Feature/Cartas/RegistrarCartaTest.php`) verificado en verde antes y después del cambio. El `Service` de almacenamiento de archivos mencionado como idea original **no se implementó** — no había necesidad concreta que lo justificara todavía (evitar sobrearquitectura, `CLAUDE.md` sección 56). Ver `docs/cambios/changelog.md`.
 
 ---
 
@@ -168,6 +169,22 @@
 **Archivos afectados:** `routes/web.php:5`, `routes/api.php:4`
 **Solución propuesta:** Eliminar los `use` no utilizados, o si representan funcionalidad planificada, documentarla explícitamente en el roadmap.
 **Fase sugerida:** Cualquier fase de limpieza menor (bajo riesgo, alto valor de claridad).
+**Estado:** **Resuelto** (2026-08-08, rama `security/fase-2-hallazgos-criticos`). Se eliminaron los 3 imports muertos confirmados por grep (se sumó `UserRqStore` en `UserController.php`, detectado en la misma revisión). Ver `docs/cambios/changelog.md`.
+
+---
+
+**ID:** ARQ-004
+**Módulo:** Cartas (Policies)
+**Problema:** `CartaPolicy` mezcla verbos legacy en español (`ver`, `eliminar`) con verbos Laravel (`view`, `update`, agregados en SEG-007/Fase 2) que **no son alias entre sí** — tienen lógica distinta
+**Tipo:** ARQUITECTURA
+**Severidad:** BAJO
+**Archivos afectados:** `app/Policies/CartaPolicy.php`, `app/Http/Controllers/CartaController.php:188` (usa `eliminar`), `resources/views/cartas/action.blade.php:8`, `resources/views/cartas/show.blade.php:58` (usan `ver`)
+**Comportamiento actual:** `ver()` exige `estado === 'Respondida'` **además** de ser dueño/admin (controla cuándo se muestra el link "ver" en las vistas). `view()` (nueva) autoriza a dueño/admin sin esa restricción de estado, y protege `show/edit/update` del controller a nivel backend. `eliminar()` sigue vigente para `destroy`.
+**Riesgo:** ninguno inmediato — ambos métodos funcionan correctamente para su propósito actual. El riesgo es de mantenibilidad: un desarrollador futuro podría asumir que `ver`/`view` son el mismo concepto y colapsarlos sin darse cuenta de que cambia una regla de negocio (cuándo se puede ver el link vs. cuándo se puede ver el detalle).
+**Solución propuesta:** Detectado durante Fase 1 al definir la convención de nombres de Policies (ver `docs/cambios/decisiones-arquitectura.md`). Antes de unificar nomenclatura hace falta una decisión de negocio, no solo de naming: ¿la restricción "solo si Respondida" debe aplicarse también a `show`/`edit`/`update`, o el link de las vistas debe dejar de depender de un método de Policy separado? Se deja pendiente para revisar con el usuario.
+**Impacto Web:** Bajo (comportamiento actual correcto, solo claridad de código). **Impacto API:** No aplica. **Impacto React Native:** No aplica.
+**Fase sugerida:** A definir junto con el usuario, posiblemente Fase 4 (cuando se toque `CartaPolicy` de nuevo para authorizeResource()).
+**Estado:** Detectado y documentado, sin corregir (decisión de negocio pendiente).
 
 ---
 
