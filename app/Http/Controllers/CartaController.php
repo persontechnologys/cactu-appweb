@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\RegistrarCartaAction;
 use App\DataTables\Carta\NinioDataTable;
 use App\DataTables\CartaDataTable;
 use App\Models\Boleta;
@@ -13,7 +14,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use PDF;
@@ -57,7 +57,7 @@ class CartaController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, RegistrarCartaAction $registrarCarta)
     {
         set_time_limit(120);
         $request->validate([
@@ -76,65 +76,24 @@ class CartaController extends Controller
             'boleta' => 'required',
             'boleta.*' => 'image|mimes:jpeg,png,jpg|max:2050',
             "carta" => "required_if:tipo,==,Contestación|mimes:pdf",
-            
+
         ]);
 
         try {
-            DB::beginTransaction();
-            $ninio=Ninio::findOrFail($request->ninio);
-            $carta=new Carta();
-            $carta->tipo=$request->tipo;
-            $carta->asunto=$request->asunto;
-            $carta->ninio_id=$request->ninio;
-            $carta->user_id=Auth::user()->id;
-            $carta->comunidad_id=$ninio->comunidad_id;
-            $carta->save();
-            
-            // if ($request->hasFile('boleta')) {
-            //     $path_boleta = Storage::putFileAs(
-            //         'public/cartas/archivo_imagen', $request->file('boleta'), $carta->id.'.'.$request->file('boleta')->getClientOriginalExtension()
-            //     );
-            //     $carta->archivo_imagen=$path_boleta;
-            //     $carta->save();
-            // }
+            $carta = $registrarCarta->registrar(
+                ninioId: $request->ninio,
+                tipo: $request->tipo,
+                asunto: $request->asunto,
+                userId: Auth::user()->id,
+                boletas: $request->file('boleta'),
+                archivoCartaPdf: $request->file('carta'),
+            );
 
-
-            if ($request->hasFile('boleta')) {
-                foreach ($request->file('boleta') as $file) {
-                    $boleta = new Boleta();
-                    $boleta->carta_id = $carta->id;
-                    $boleta->save();
-                    
-                    $path_boleta = Storage::putFileAs(
-                        'public/cartas/boletas', $file, $boleta->id .'.' . $file->getClientOriginalExtension()
-                    );
-                    $boleta->archivo_imagen=$path_boleta;
-                    $boleta->save();
-                }
-            }
-
-
-
-
-
-            if ($request->hasFile('carta')) {
-                $path_carta = Storage::putFileAs(
-                    'public/cartas/archivo_pdf', $request->file('carta'), $carta->id.'.'.$request->file('carta')->getClientOriginalExtension()
-                );
-                $carta->archivo_pdf=$path_carta;
-                $carta->save();
-            }
-
-
-            DB::commit();
-           
             $this->enviarNotificacion($carta);
-           
-            
-            Session::flash('success','Carta de '.$carta->tipo.' enviada a '.$ninio->nombres_completos);
+
+            Session::flash('success','Carta de '.$carta->tipo.' enviada a '.$carta->ninio->nombres_completos);
             return redirect()->route('cartas.index');
         } catch (\Throwable $th) {
-            DB::rollBack();
             Log::error('Error al enviar carta: '.$th->getMessage());
             Session::flash('info','Carta no enviado, vuelva a intentar o consulte con administrador.');
             return redirect()->back()->withInput();
