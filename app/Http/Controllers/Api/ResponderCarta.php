@@ -184,6 +184,12 @@ class ResponderCarta extends Controller
             DB::beginTransaction();
             $carta=Carta::findOrFail($request->id);
 
+            // la carta debe pertenecer al niño autenticado (ver SEG-005)
+            if($carta->ninio_id!==$request->user()->id){
+                DB::rollBack();
+                return response()->json(['error'=>'No autorizado'],403);
+            }
+
             if($carta->estado=='Respondida'){
                 return response()->json(['info'=>'Carta ya fue respondida']);
             }else{
@@ -284,7 +290,13 @@ class ResponderCarta extends Controller
             'id'=>'required'
         ]);
 
-        $carta=Carta::find($request->id);
+        $carta=Carta::findOrFail($request->id);
+
+        // la carta debe pertenecer al niño autenticado (ver SEG-005)
+        if($carta->ninio_id!==$request->user()->id){
+            return response()->json(['error'=>'No autorizado'],403);
+        }
+
         $carta->eliminado=true;
         $carta->save();
         return response()->json(['success'=>'Carta eliminado exitosamente.!']);
