@@ -131,6 +131,48 @@
             $('#txt_apellidos_nombres').val($(arg).data('nombres_completos'));
             $('#id').val($(arg).data('id'));
         }
+        // Comprime una imagen (respetando su orientación EXIF) antes de subirla.
+        // El resize del plugin fileinput (abajo) solo afecta la vista previa,
+        // no los bytes reales del <input>, así que sin esto se sube la foto
+        // original de cámara (varios MB) en cada carta.
+        async function comprimirImagenBoleta(file, maxDimension = 1280, calidad = 0.75) {
+            try {
+                const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+                let { width, height } = bitmap;
+                if (width > maxDimension || height > maxDimension) {
+                    const ratio = Math.min(maxDimension / width, maxDimension / height);
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
+                bitmap.close();
+
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', calidad));
+                if (!blob) return file;
+
+                const nombre = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+                return new File([blob], nombre, { type: 'image/jpeg', lastModified: Date.now() });
+            } catch (e) {
+                return file;
+            }
+        }
+
+        async function comprimirBoletasAntesDeEnviar() {
+            const input = document.getElementById('boleta');
+            if (!input.files || input.files.length === 0) return;
+
+            const comprimidas = await Promise.all(
+                Array.from(input.files).map(file => comprimirImagenBoleta(file))
+            );
+
+            const dt = new DataTransfer();
+            comprimidas.forEach(file => dt.items.add(file));
+            input.files = dt.files;
+        }
+
         $('#formCuentaUser').validate({
             rules:{
                 asunto:{
@@ -138,7 +180,7 @@
                 }
             },
             submitHandler: function(form) {
-                
+
                 $.confirm({
                     title: 'CONFIRMAR TRANSACCIÓN',
                     content: "Esta seguro de enviar carta de "+$('#tipo').find(":selected").val()+" a "+$('#txt_apellidos_nombres').val(),
@@ -150,10 +192,11 @@
                         SI: {
                             btnClass: 'btn btn-primary',
                             keys: ['enter'],
-                            action: function(){
+                            action: async function(){
                                 block.open()
+                                await comprimirBoletasAntesDeEnviar();
                                 form.submit();
-                                
+
                             }
                         },
                         NO: function () {

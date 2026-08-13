@@ -575,3 +575,21 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 **Archivos:** `docs/infraestructura/cron.md` (nuevo), `docs/auditoria/infraestructura-actual.md`, `docs/infraestructura/despliegue.md`, `docs/auditoria/problemas-detectados.md` (`PERF-001`, `FIREBASE-001` actualizados con la confirmación). Ningún archivo de código de la aplicación fue modificado — este cambio es 100% documentación y configuración de panel externa al repositorio.
 **Impacto Web/API/React Native:** ninguno directo sobre código. **Impacto funcional:** el correo y las notificaciones push, rotas en producción desde que se migró a colas asíncronas el 2026-08-08, ahora llegan.
 **Pruebas:** verificación funcional real por el usuario en su dispositivo (correo y notificación push recibidos). No aplica suite automatizada (sin cambios de código).
+
+---
+
+## 2026-08-13 — UX/performance: compresión real de boletas antes de subir en `cartas.create`
+
+**Fase:** Transversal, UX/performance (`CLAUDE.md` sección 55, "Problemas de performance").
+**Motivo:** el usuario reportó que crear una carta se siente lento durante la subida de archivos (confirmado: ocurre siempre, incluso solo con boletas, no solo cuando hay PDF adjunto).
+
+**Diagnóstico (antes de tocar código):** el formulario ya tenía configurado `resizeImage: true` en el plugin `bootstrap-fileinput` para el campo `boleta[]`, pero se confirmó revisando el propio `fileinput.min.js` vendoreado (sin ninguna referencia a `DataTransfer`) que ese resize **solo afecta la vista previa**. El envío real es un `form.submit()` nativo (`resources/views/cartas/create.blade.php`, `submitHandler`), así que los bytes que viajaban al servidor eran siempre la foto original de cámara, sin comprimir. El campo `carta` (PDF, solo para tipo "Contestación") queda fuera de este cambio — no aplica compresión vía canvas y no tiene límite de tamaño en ningún punto del flujo; se deja registrado como posible problema aparte si se confirma que también es lento.
+
+**Cambio:** se agregan `comprimirImagenBoleta()` y `comprimirBoletasAntesDeEnviar()` en `cartas/create.blade.php`. Antes de `form.submit()` (dentro del botón "SI" del `$.confirm` ya existente), cada imagen de `boleta[]` se recomprime vía `createImageBitmap(file, {imageOrientation:'from-image'})` + `<canvas>` (máximo 1280px de lado mayor, calidad JPEG 0.75, con corrección de orientación EXIF) y se reemplaza el `FileList` real del input vía `DataTransfer`, antes de que el navegador arme la petición.
+
+**Archivos:** `resources/views/cartas/create.blade.php`. Ningún archivo de backend tocado (Controllers, Actions, reglas de validación de `image|mimes:jpeg,png,jpg|max:2050` sin cambios y siguen cumpliéndose con margen).
+**Impacto Web:** el tamaño real subido por boleta baja de forma significativa; sin cambio visible de comportamiento salvo la velocidad. **Impacto API/React Native:** ninguno — esta vista es exclusiva del panel web, no la consume `CactuApp`.
+**Pruebas:** verificación de punta a punta en un navegador real (Playwright/Chromium), no solo revisión de código:
+1. Prueba aislada del mecanismo (sin backend): imagen realista de cámara (3024x4032, 6.03 MB) → comprimida a 119 KB (98% menos) por el mismo código exacto del archivo; se verificó que el JPEG resultante no queda corrupto y que una imagen con metadato EXIF `Orientation=6` se corrige correctamente (no queda "de lado").
+2. **Prueba end-to-end real** contra el entorno local con MySQL: usuario ADMINISTRADOR desechable, login real, formulario real, niño real (solo lectura) — se adjuntó una foto de 1.88 MB (el máximo que el propio plugin permite seleccionar; fotos mayores ya eran rechazadas por su `maxFileSize:2050` antes de este cambio) y se confirmó que el archivo efectivamente guardado en `storage/app/public/cartas/boletas/` pesa **116 KB** (94% menos), que la validación del backend pasó sin cambios y que la carta se creó y se ve correctamente en el listado. Datos de prueba (carta, boleta, archivo, usuario) eliminados al terminar; base real sin cambios propios.
+**Pendiente/hallazgo relacionado (no corregido aquí):** el campo `carta` (PDF, requerido solo para tipo "Contestación") no tiene compresión ni límite de tamaño en ningún punto del flujo — si se confirma que también es un cuello de botella, requiere una solución aparte (comprimir un PDF en el navegador no es equivalente a una imagen).
