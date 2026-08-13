@@ -31,7 +31,8 @@ Route::get('/', function () {
     //Artisan::call('optimize:clear');
     // config cache
     //Artisan::call('config:cache');
-    
+    // migrate
+    //Artisan::call('migrate');
     if (Auth::check()) {
         return redirect()->route('home');
     }
