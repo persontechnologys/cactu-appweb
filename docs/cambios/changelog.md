@@ -560,3 +560,18 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 **Archivos:** `app/Http/Requests/User/UpdateRq.php`, `resources/views/usuarios/edit.blade.php`, `tests/Feature/Seguridad/UsuariosAutorizacionTest.php`.
 **Impacto Web:** ninguno visible — el formulario ya funcionaba antes; ahora es robusto independientemente del payload del cliente. **Impacto API:** ninguno. **Impacto React Native:** ninguno.
 **Pruebas:** `php artisan view:cache` sin errores; render real de `usuarios/edit` vía `tinker` confirmando que el campo oculto ya no está presente; test nuevo verificado en verde (`assertSessionDoesntHaveErrors` + `assertRedirect`). Suite completa: 88/88 en verde (87 + 1 test nuevo). Base real sin cambios (solo lecturas).
+
+---
+
+## 2026-08-12 — Infraestructura: cron de producción confirmado (cierra el pendiente real de `PERF-001`/`FIREBASE-001`)
+
+**Fase:** Transversal, infraestructura (`CLAUDE.md` sección 17-18).
+**Motivo:** el usuario reportó que ni el correo ni las notificaciones push de Firebase llegaban en producción. Ambos hallazgos (`PERF-001`, `FIREBASE-001`) ya estaban marcados "Resuelto" en el código desde el 2026-08-08, pero ambos dejaban explícitamente pendiente la misma verificación externa al repositorio: que el cron de cPanel estuviera realmente procesando la tabla `jobs` (sin eso, cualquier Notification `ShouldQueue` con `QUEUE_CONNECTION=database` queda encolada para siempre, sin error visible).
+
+**Diagnóstico (solo lectura, sin tocar código):** se confirmó que `EnviarNotificacionCartaNueva` y `EnviarCartaRespondidaGestor` implementan `ShouldQueue`, que `QUEUE_CONNECTION=database` en `.env`, y que `app/Console/Kernel.php` depende de que algo dispare `queue:work` periódicamente — ese "algo" es una entrada de cron en cPanel, configuración de panel no auditable desde este repositorio.
+
+**Cambio:** el usuario creó directamente en cPanel dos entradas de cron (documentadas, no aplicadas por este repositorio): `queue:work --stop-when-empty --tries=3 --timeout=90` cada minuto y `queue:prune-failed --hours=168` diario. **Confirmado por el usuario:** tanto el correo como las notificaciones Firebase empezaron a llegar. Se detectó y documentó un gap menor: esta configuración no pasa por `artisan schedule:run`, así que `temp:limpiar` (`INFRA-001`) sigue sin ejecutarse en producción — impacto bajo (huérfanos de `storage/app/temp` solo se acumulan si un proceso PHP muere a mitad de camino), con una entrada de cron adicional propuesta (no aplicada, pendiente de autorización) en `docs/infraestructura/cron.md`.
+
+**Archivos:** `docs/infraestructura/cron.md` (nuevo), `docs/auditoria/infraestructura-actual.md`, `docs/infraestructura/despliegue.md`, `docs/auditoria/problemas-detectados.md` (`PERF-001`, `FIREBASE-001` actualizados con la confirmación). Ningún archivo de código de la aplicación fue modificado — este cambio es 100% documentación y configuración de panel externa al repositorio.
+**Impacto Web/API/React Native:** ninguno directo sobre código. **Impacto funcional:** el correo y las notificaciones push, rotas en producción desde que se migró a colas asíncronas el 2026-08-08, ahora llegan.
+**Pruebas:** verificación funcional real por el usuario en su dispositivo (correo y notificación push recibidos). No aplica suite automatizada (sin cambios de código).

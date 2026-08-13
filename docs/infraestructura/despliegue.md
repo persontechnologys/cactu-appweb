@@ -17,12 +17,8 @@ Cada ítem indica: qué variable/config revisar, el valor correcto esperado en p
 
 - [ ] **`QUEUE_CONNECTION=database`** — local está deliberadamente en `sync` (decisión documentada, no es un olvido). En producción debe ser `database`, porque `app/Console/Kernel.php` agenda `queue:work --stop-when-empty` cada minuto; con `sync` ese comando no hace nada y las notificaciones (`EnviarCartaRespondidaGestor`, `EnviarNotificacionCartaNueva`, ahora `ShouldQueue`) correrían síncronas igual.
   - [ ] Requiere `php artisan migrate` en producción para publicar la tabla `jobs` (antes solo existía `failed_jobs`).
-- [ ] **Entrada de Cron en cPanel** para el Scheduler:
-  ```
-  * * * * * php /home/usuario/cactu-appweb/artisan schedule:run >> /dev/null 2>&1
-  ```
-  Sin esto, los jobs de la tabla `jobs` quedan encolados para siempre y `temp:limpiar` nunca corre. Verificar/crear en cPanel > Cron Jobs (no auditable desde este repo).
-- [ ] **`FIREBASE_CREDENTIALS`** — apunta a `storage/app/firebase/service-account.json` (ruta relativa, gitignoreada desde este cambio). Confirmar que el JSON real de la cuenta de servicio de Firebase esté copiado manualmente a esa ruta en el servidor. Sin él, cualquier notificación por el canal `firebase` (`FirebaseChannel`) falla. Ver `FIREBASE-001` en `docs/auditoria/problemas-detectados.md`.
+- [x] **Entrada de Cron en cPanel** para procesar la cola — **confirmado 2026-08-12**, aunque con una configuración distinta a la originalmente sugerida aquí: producción usa dos entradas directas (`queue:work --stop-when-empty --tries=3 --timeout=90` cada minuto, `queue:prune-failed --hours=168` diario) en vez de `schedule:run`. Funciona para procesar `jobs`, pero **`temp:limpiar` sigue sin ejecutarse** porque nunca se llama a `schedule:run`. Ver `docs/infraestructura/cron.md` para el detalle y la entrada de cron adicional recomendada (no aplicada, pendiente de autorización).
+- [x] **`FIREBASE_CREDENTIALS`** — apunta a `storage/app/firebase/service-account.json` (ruta relativa, gitignoreada desde este cambio). **Confirmado 2026-08-12**: con el cron ya procesando la cola, las notificaciones Firebase llegaron al dispositivo real — confirma que el JSON de la cuenta de servicio está copiado y es válido en producción. Ver `FIREBASE-001` en `docs/auditoria/problemas-detectados.md`.
 - [ ] **`config/snappy.php`** — el binario ahora apunta a `vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64` (antes ruta Windows hardcodeada). El audit indica que ya coincide con lo activo en el servidor real (`PDF-001`), pero confirmar permisos de ejecución (`chmod +x`) tras el `composer install` en producción.
 - [ ] **Versión de PHP CLI** — confirmar que el PHP que ejecuta el cron (CLI) es la misma versión que PHP-FPM/Apache. Es común que difieran en cPanel compartido, y eso rompería el Scheduler en silencio.
 

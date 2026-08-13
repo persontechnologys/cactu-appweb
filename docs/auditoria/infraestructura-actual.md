@@ -22,7 +22,7 @@
 * * * * * php /home/usuario/cactu-appweb/artisan schedule:run >> /dev/null 2>&1
 ```
 
-Esta entrada de cron **no existe documentada en el repositorio** (es configuración del panel, no del código) — debe verificarse directamente en cPanel > Cron Jobs. No se pudo confirmar su existencia desde este entorno de auditoría.
+**Actualización 2026-08-12 (confirmado en producción):** esta entrada de `schedule:run` **no es la que se configuró realmente**. En su lugar, producción tiene dos entradas de cron que invocan directamente `queue:work --stop-when-empty --tries=3 --timeout=90` (cada minuto) y `queue:prune-failed --hours=168` (diario) — funciona para procesar la cola, pero como nunca se ejecuta `schedule:run`, la tarea `temp:limpiar` (sección 5, `INFRA-001`) tampoco corre en producción. Detalle completo, comandos exactos y la brecha pendiente en `docs/infraestructura/cron.md`.
 
 ## 3. Colas en un hosting compartido sin Supervisor/Redis
 
@@ -32,7 +32,7 @@ Dado que cPanel compartido normalmente no permite procesos persistentes (`queue:
 - **Procesamiento vía Cron + `queue:work --stop-when-empty`**: registrado en `app/Console/Kernel.php`, disparado cada minuto por el Scheduler en vez de un worker persistente, compatible con las restricciones de procesos de cPanel compartido.
 - `EnviarCartaRespondidaGestor` y `EnviarNotificacionCartaNueva` ahora implementan `ShouldQueue` (antes solo la importaban sin implementarla, por lo que corrían síncronas pese al driver configurado).
 
-Pendiente de confirmar directamente en producción: que la entrada de Cron para `schedule:run` (sección 7) esté realmente activa — sin ella, los jobs quedarían encolados en la tabla `jobs` sin procesarse nunca.
+**Confirmado en producción (2026-08-12):** el cron sí está activo (aunque con una configuración distinta a `schedule:run`, ver actualización en sección 2) — el usuario confirmó que las notificaciones de correo y Firebase, que antes quedaban encoladas sin procesarse, empezaron a llegar tras crear las dos entradas de cron. Detalle en `docs/infraestructura/cron.md`.
 
 ## 4. PHP CLI / Artisan
 
@@ -50,7 +50,7 @@ Existe una carpeta temporal (`Storage::path('temp')` = `storage/app/temp`, usada
 
 ## 7. Resumen de lo que debe confirmarse directamente en cPanel (no auditable desde el código)
 
-- Existencia y frecuencia real de la entrada de Cron para `schedule:run`.
+- ~~Existencia y frecuencia real de la entrada de Cron para `schedule:run`.~~ **Confirmado 2026-08-12** — ver `docs/infraestructura/cron.md` (configuración real usa `queue:work`/`queue:prune-failed` directos, no `schedule:run`; queda pendiente agregar `schedule:run` para que `temp:limpiar` corra).
 - Versión de PHP CLI vs PHP-FPM configurada.
 - Contenido real de `.env` de producción (`APP_DEBUG`, `APP_ENV`, credenciales SMTP/Firebase, y si `config/snappy.php` fue sobreescrito localmente en el servidor con una ruta de binario Linux válida).
 - Cuota de disco disponible y uso actual de `storage/`.
