@@ -20,7 +20,7 @@
                 </a>
             </li> --}}
             <li class="nav-item ms-md-1">
-                <a href="{{ asset('apk/CactuApp.apk') }}" class="navbar-nav-link navbar-nav-link-icon text-success bg-success bg-opacity-10 fw-semibold rounded">
+                <a href="{{ asset('apk/app-release.apk') }}" class="navbar-nav-link navbar-nav-link-icon text-success bg-success bg-opacity-10 fw-semibold rounded">
                     <div class="d-flex align-items-center mx-md-1">
                         <i class="ph ph-device-mobile"></i>
                         <span class="d-none d-md-inline-block ms-2">DESCARGAR APLICACIÓN ANDROID</span>
