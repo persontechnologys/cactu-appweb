@@ -1,64 +1,60 @@
 @if ($carta->estado=='Respondida')
 <span class="fw-semibold">Carta de {{ $carta->tipo }} ha sido {{ $carta->estado }}!</span>
-<a href="{{ route('cartas-ninio.index',Crypt::encryptString($ninio->numero_child)) }}" class="btn btn-link">
+<a href="{{ route('cartas-ninio.index') }}" class="btn btn-link">
     Regresar a mis cartas
 </a>
 @else
-    <h1>Carta de {{ $carta->tipo }}</h1>
-    @if ($carta->archivo_pdf)
-        <h3>DE PARTE DE TU PATROCINADOR</h3>
-        {{-- <div class="ratio ratio-16x9 my-2">
-            <iframe src="{{ route('cartas-ninio.ver-archivo',[Crypt::encryptString($carta->id),'pdf']) }}" title="{{ $carta->tipo }}" allowfullscreen></iframe>
-        </div>  --}}
-    @endif
-
-    <hr>
-    <p><b>Asunto:</b>{{ $carta->asunto }}</p>
-    <p><strong>Hola,</strong> {{ $carta->ninio->nombres_completos }}</p>
-
     <form action="{{ route('cartas-ninio.guardar-iniciada') }}" id="formCarta" method="POST" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="imagen" id="inputImagen">
         <input type="hidden" name="id" value="{{ Crypt::encryptString($carta->id) }}">
-        
-        <div class="mb-2">
-            <label for="nombre_patrocinador">Ingresa el nombre de tu patrocinador</label>
-            <input type="text" required name="nombre_patrocinador" value="{{ old('nombre_patrocinador') }}" id="nombre_patrocinador" class="form-control input " placeholder="Ingresa el nombre de tu patrocinador." required>
-        </div>
+        <input type="hidden" name="ninio" value="{{ Crypt::encryptString($ninio->numero_child) }}">
 
-        
-
-        <div class="mb-2">
-            <label for="te_cuento_que">Te cuento que </label>
-            <input type="text" required name="te_cuento_que" value="{{ old('te_cuento_que') }}" id="te_cuento_que" class="form-control input " placeholder="...." required>
-        </div>
-        <div class="mb-2">
-            <label for="en_cactu_aprendi">Gracias a ChildFund, en CACTU aprendí </label>
-            <input type="text" required name="en_cactu_aprendi" value="{{ old('en_cactu_aprendi') }}" id="en_cactu_aprendi" class="form-control input " placeholder="..." required>
-        </div>
-
-        <div class="mb-2">
-            <label for="pregunta_al_patrocinador">Es hora de hacer una pregunta a tu patrocinador</label>
-            <input type="text" required name="pregunta_al_patrocinador" value="{{ old('pregunta_al_patrocinador') }}" id="pregunta_al_patrocinador" class="form-control input " placeholder="...." required>
-        </div>
-        
-        <label for="detalle">Aquí tu despedida, no te olvides de poner  tu nombre </label>
-        <div class="col-md-12 mb-1">
-            <div class="form-floating form-control-feedback form-control-feedback-start">
-                <div class="form-control-feedback-icon">
-                    <i class="ph ph-article-medium"></i>
-                </div>
-                <textarea name="detalle" id="detalle" style="height: 250px" class="form-control @error('detalle') is-invalid @enderror" required>{{ old('detalle') }}</textarea>
-                <label for="detalle">Redacte aquí....</label>
-                @error('detalle')
-                    <div class="invalid-feedback">
-                        {{ $message }}
-                    </div>
-                @enderror
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Carta de {{ $carta->tipo }}</h5>
+                @if ($carta->archivo_pdf)
+                    <div class="fs-sm text-muted mt-1">DE PARTE DE TU PATROCINADOR</div>
+                    {{-- <div class="ratio ratio-16x9 my-2">
+                        <iframe src="{{ route('cartas-ninio.ver-archivo',[Crypt::encryptString($carta->id),'pdf']) }}" title="{{ $carta->tipo }}" allowfullscreen></iframe>
+                    </div>  --}}
+                @endif
             </div>
-        </div>
+            <div class="card-body">
+                <p class="mb-1"><strong>Asunto:</strong> {{ $carta->asunto }}</p>
+                <p class="mb-3"><strong>Hola,</strong> {{ $carta->ninio->nombres_completos }}</p>
 
-        <div class="col-md-12 mb1">
+                <div class="mb-3">
+                    <label for="nombre_patrocinador" class="form-label">Ingresa el nombre de tu patrocinador</label>
+                    <input type="text" name="nombre_patrocinador" value="{{ old('nombre_patrocinador') }}" id="nombre_patrocinador" class="form-control" placeholder="Ingresa el nombre de tu patrocinador." required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="te_cuento_que" class="form-label">Te cuento que</label>
+                    <input type="text" name="te_cuento_que" value="{{ old('te_cuento_que') }}" id="te_cuento_que" class="form-control" placeholder="...." required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="en_cactu_aprendi" class="form-label">Gracias a ChildFund, en CACTU aprendí</label>
+                    <input type="text" name="en_cactu_aprendi" value="{{ old('en_cactu_aprendi') }}" id="en_cactu_aprendi" class="form-control" placeholder="..." required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="pregunta_al_patrocinador" class="form-label">Es hora de hacer una pregunta a tu patrocinador</label>
+                    <input type="text" name="pregunta_al_patrocinador" value="{{ old('pregunta_al_patrocinador') }}" id="pregunta_al_patrocinador" class="form-control" placeholder="...." required>
+                </div>
+
+                <div class="mb-0">
+                    <label for="detalle" class="form-label">Aquí tu despedida, no te olvides de poner tu nombre</label>
+                    <textarea name="detalle" id="detalle" style="height: 250px" class="form-control @error('detalle') is-invalid @enderror" required>{{ old('detalle') }}</textarea>
+                    @error('detalle')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+            </div>
+
             <div class="card-footer d-sm-flex justify-content-sm-between align-items-sm-center py-sm-2">
                 <div class="btn-group w-100 w-sm-auto">
                     <button type="button" class="btn btn-link flex-column" onclick="abrirModal(this)">
@@ -68,25 +64,20 @@
                         </div>
                         Tomar foto
                     </button>
-                   
                 </div>
 
                 <div class="hstack gap-2 mt-3 mt-sm-0">
                     <button type="submit" class="btn btn-primary w-100 w-sm-auto">
                         Responder
                     </button>
-                    <a href="{{ route('cartas-ninio.index',Crypt::encryptString($ninio->numero_child)) }}" class="btn btn-danger w-100 w-sm-auto">
+                    <a href="{{ route('cartas-ninio.index') }}" class="btn btn-danger w-100 w-sm-auto">
                         Cancelar
                     </a>
                 </div>
-                
             </div>
         </div>
-
-
-        
     </form>
-            
+
     <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm">
           <div class="modal-content">
@@ -97,7 +88,7 @@
                 <div class="ratio ratio-4x3">
                     <video class="embed-responsive-item" id="videoId" autoplay="true"></video>
                 </div>
-                
+
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" onclick="tomarFoto(this)" >TOMAR FOTO</button>
@@ -114,17 +105,17 @@
 
 
     <script>
-        
+
 
         let videoElement = document.getElementById('videoId');
         let imgElement = document.getElementById('imgId');
-        
+
         var FACING_MODES = JslibHtml5CameraPhoto.FACING_MODES;
         var cameraPhoto = new JslibHtml5CameraPhoto.default(videoElement);
         var estado_camara=false;
 
         function startCamera(){
-            
+
             cameraPhoto.startCamera(FACING_MODES.ENVIRONMENT)
             .then(() => {
                 console.log('Camera started !');
@@ -133,7 +124,7 @@
             .catch((error) => {
                 alert('Encontramos un error con la camara del dispositivo.')
                 console.error('Camera not started!', error);
-                
+
             });
         }
 
@@ -144,7 +135,7 @@
             }else{
                 $('#staticBackdrop').modal('hide');
             }
-            
+
         }
 
         function cerrarModal(arg){
@@ -165,7 +156,7 @@
             imgElement.src = dataUri;
             var inputImagen = document.getElementById("inputImagen");
             inputImagen.value = dataUri;
-        
+
         }
 
         function stopCamera () {
@@ -180,9 +171,9 @@
 
 
         $('#formCarta').validate({
-            
+
             submitHandler: function(form) {
-                
+
                 $.confirm({
                     title: 'CONFIRMAR',
                     content: "Esta seguro de responder carta de {{ $carta->tipo }}.",
@@ -196,20 +187,20 @@
                             btnClass: 'btn btn-primary',
                             keys: ['enter'],
                             action: function(){
-                                
-                                
+
+
                                 block.open()
                                 form.submit()
                             }
                         },
                         NO: function () {
-                            
+
                         }
                     }
                 });
             }
         });
-        
+
     </script>
     @endpush
 

@@ -5,7 +5,7 @@
         </a>
 
         <div class="dropdown-menu dropdown-menu-end">
-          @can('ver', $c)
+          @can('mostrarEnlaceVer', $c)
             <a href="{{ route('cartas.show',$c->id) }}" class="dropdown-item">
                 <i class="ph ph-eye me-2"></i>
                 Ver

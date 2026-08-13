@@ -3,8 +3,10 @@
 .env
 .env.backup
 .env.production
+.env-produccion
 .phpactor.json
 .phpunit.result.cache
+/.claude/settings.json
 /.fleet
 /.idea
 /.nova
@@ -18,6 +20,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/app/firebase
 /vendor
 Homestead.json
 Homestead.yaml

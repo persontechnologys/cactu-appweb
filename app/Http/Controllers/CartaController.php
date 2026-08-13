@@ -103,7 +103,7 @@ class CartaController extends Controller
 
     public function enviarNotificacion($carta){
 
-        if($carta->ninio->email || $carta->ninio->fcm_token){
+        if($carta->ninio->email || $carta->ninio->dispositivos()->exists()){
             $carta->ninio->notify(new EnviarNotificacionCartaNueva($carta));
         }
         
@@ -173,23 +173,16 @@ class CartaController extends Controller
         return redirect()->route('cartas.index');
     }
 
-    public function verPDF($id,$version=null) {
-        
+    public function verPDF($id) {
+
         $carta=Carta::findOrFail($id);
         $title='CARTA DE '.$carta->ninio->nombres_completos.'.pdf';
         $data = array(
             'carta'=>$carta,
             'title'=>$title
         );
-        
-        if($version && $version=='v2'){
-            $pdf = PDF::loadView('cartas.v2.verpdf', $data);
-        }else{
-            $pdf = PDF::loadView('cartas.verpdf', $data);
-        }
-        
 
-        
+        $pdf = PDF::loadView('cartas.verpdf', $data);
 
         return $pdf->inline($title );
     }

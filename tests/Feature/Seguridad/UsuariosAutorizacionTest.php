@@ -72,10 +72,7 @@ class UsuariosAutorizacionTest extends TestCase
         $this->actingAs($admin)
             ->put(route('usuarios.update', $gestor->id), [
                 'name' => $gestor->name,
-                // nota: se cambia el email respecto al original porque UpdateRq
-                // tiene un bug preexistente (no relacionado a SEG-001, ver
-                // problemas-detectados.md) que rechaza el email sin cambios.
-                'email' => 'gestor-actualizado@example.com',
+                'email' => $gestor->email,
                 'estado' => 'ACTIVO',
                 'provincia' => 'Pichincha',
                 'roles' => [$rolAdmin->id],
@@ -83,6 +80,29 @@ class UsuariosAutorizacionTest extends TestCase
             ->assertSessionHasErrors('roles.0');
 
         $this->assertFalse($gestor->fresh()->hasRole(config('app.ROLE_ADMIN')));
+    }
+
+    /**
+     * BUG-001: UpdateRq usaba $this->id (siempre null, la ruta usa el parámetro
+     * "usuario") para excluir al propio usuario de la regla unique:email. Se
+     * corrigió a $this->route('usuario').
+     */
+    public function test_editar_usuario_sin_cambiar_su_email_no_falla_la_validacion(): void
+    {
+        $admin = $this->crearAdministrador();
+        $gestor = $this->crearGestor();
+        $rolGestor = Role::findOrCreate(config('app.ROLE_GESTOR'), 'web');
+
+        $this->actingAs($admin)
+            ->put(route('usuarios.update', $gestor->id), [
+                'name' => $gestor->name,
+                'email' => $gestor->email,
+                'estado' => 'ACTIVO',
+                'provincia' => 'Pichincha',
+                'roles' => [$rolGestor->id],
+            ])
+            ->assertSessionDoesntHaveErrors()
+            ->assertRedirect(route('usuarios.index'));
     }
 
     public function test_un_administrador_no_puede_crear_un_usuario_con_rol_administrador(): void

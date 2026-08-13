@@ -46,7 +46,21 @@ class ComunidadDataTable extends DataTable
      */
     public function query(Comunidad $model): QueryBuilder
     {
-        return $model->newQuery();
+        return $this->applyFilters($model->newQuery());
+    }
+
+    /**
+     * Aplicar filtros de búsqueda
+     */
+    private function applyFilters($query)
+    {
+        $request = request();
+
+        if ($request->filled('gestor_filter') && $request->gestor_filter !== 'all') {
+            $query->where('user_id', $request->gestor_filter);
+        }
+
+        return $query;
     }
 
     /**

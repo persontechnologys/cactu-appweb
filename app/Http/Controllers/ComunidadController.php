@@ -15,7 +15,9 @@ class ComunidadController extends Controller
      */
     public function index(ComunidadDataTable $comunidadDataTable)
     {
-         return $comunidadDataTable->render('comunidad.index');
+         return $comunidadDataTable->render('comunidad.index', [
+             'gestores' => User::select('id', 'name', 'email')->orderBy('name')->get(),
+         ]);
     }
 
     /**

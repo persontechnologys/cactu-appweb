@@ -12,6 +12,10 @@ class Ninio extends Authenticatable
 {
     use HasApiTokens,HasFactory,Notifiable;
 
+    // DEPRECATED (Fase 7, punto 3): reemplazado por la relación dispositivos().
+    // Se conserva la columna/atributo por compatibilidad de GET /user y
+    // POST /login (no se escribe más desde código nuevo). Ver
+    // docs/cambios/decisiones-arquitectura.md.
     protected $fillable=[
         'numero_child',
         'nombres_completos',
@@ -32,5 +36,9 @@ class Ninio extends Authenticatable
     public function cartas()
     {
         return $this->hasMany(Carta::class, 'ninio_id');
+    }
+    public function dispositivos()
+    {
+        return $this->hasMany(Dispositivo::class);
     }
 }

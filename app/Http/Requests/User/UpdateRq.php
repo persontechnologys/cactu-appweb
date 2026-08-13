@@ -23,7 +23,7 @@ class UpdateRq extends FormRequest
     {
         return [
             'name'=>'required|string|max:255',
-            'email'=>'required|string|max:255|unique:users,email,'.$this->id,
+            'email'=>'required|string|max:255|unique:users,email,'.$this->route('usuario'),
             'password'=>'nullable|string|max:255',
             'estado'=>'required|in:ACTIVO,INACTIVO',
             "roles"    => "required|array",

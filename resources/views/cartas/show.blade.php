@@ -15,12 +15,11 @@
 @section('content')
 
 
-{{-- crear dos columnas --}}
 <div class="row mb-3">
     <div class="col-md-6">
         <div class="card">
           <div class="card-header">
-            Carta de {{ $carta->tipo }}, del Niñ@: {{ $carta->ninio->nombres_completos }} (v1)
+            Carta de {{ $carta->tipo }}, del Niñ@: {{ $carta->ninio->nombres_completos }}
           </div>
           <div class="card-body">
             <div class="ratio ratio-16x9">
@@ -28,45 +27,43 @@
           </div>
           </div>
         </div>
-        
     </div>
+
     <div class="col-md-6">
         <div class="card">
           <div class="card-header">
-            Carta de {{ $carta->tipo }}, del Niñ@: {{ $carta->ninio->nombres_completos }} (v2)
-            
-
+            Detalle de la carta
           </div>
           <div class="card-body">
-            <div class="ratio ratio-16x9">
-              <iframe src="{{ route('cartas.ver-carta-pdf',[$carta->id,'v2']) }}" class="card-img-top" allowfullscreen frameborder="0" mozallowfullscreen></iframe>
-            </div>
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Tipo</dt>
+                <dd class="col-sm-8">
+                    <span class="badge bg-{{ $carta->color }}"><i class="{{ $carta->icono }} me-1"></i>{{ $carta->tipo }}</span>
+                </dd>
+
+                <dt class="col-sm-4">Estado</dt>
+                <dd class="col-sm-8">
+                    <span class="badge bg-{{ $carta->estado_color }}">{{ $carta->estado ?? 'Enviado' }}</span>
+                </dd>
+
+                <dt class="col-sm-4">Niñ@</dt>
+                <dd class="col-sm-8">{{ $carta->ninio->nombres_completos }}</dd>
+
+                <dt class="col-sm-4">Comunidad</dt>
+                <dd class="col-sm-8">{{ $carta->comunidad->nombre ?? 'Sin comunidad' }}</dd>
+
+                <dt class="col-sm-4">Gestor</dt>
+                <dd class="col-sm-8">{{ $carta->gestor->name ?? 'Sin gestor' }}</dd>
+
+                <dt class="col-sm-4">Fecha de creación</dt>
+                <dd class="col-sm-8">{{ optional($carta->created_at)->format('d/m/Y H:i') }}</dd>
+
+                <dt class="col-sm-4">Fecha de respuesta</dt>
+                <dd class="col-sm-8">{{ optional($carta->fecha_respondida)->format('d/m/Y H:i') ?? 'Sin responder' }}</dd>
+            </dl>
           </div>
         </div>
-        
     </div>
 </div>
-
-
-{{-- <div class="card">
-  <div class="card-header">
-    Carta de {{ $carta->tipo }}, del Niñ@: {{ $carta->ninio->nombres_completos }}
-  </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <div class="ratio ratio-16x9">
-                @can('ver', $carta)
-                    <iframe src="{{ route('cartas.ver-carta-pdf',$carta->id) }}" title="YouTube video" allowfullscreen></iframe>
-                @else
-                <div class="alert alert-primary alert-dismissible fade show" role="alert">
-                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                  <strong>{{ $carta->ninio->nombres_completos }} no pertenece a usd, o no responde la carta de {{ $carta->tipo }}.</strong> 
-                </div>
-                @endcan
-                
-              </div>
-        </div>
-    </div>
-</div> --}}
 
 @endsection

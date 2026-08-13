@@ -19,5 +19,8 @@ class Comunidad extends Model
         return $this->belongsTo(User::class,'user_id');
     }
 
-   
+    public function ninios()
+    {
+        return $this->hasMany(Ninio::class, 'comunidad_id');
+    }
 }

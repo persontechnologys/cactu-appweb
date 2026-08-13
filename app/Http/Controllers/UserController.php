@@ -23,7 +23,12 @@ class UserController extends Controller
     public function index(UserDataTable $dataTable)
     {
         $this->authorize('viewAny', User::class);
-        return $dataTable->render('usuarios.index');
+
+        return $dataTable->render('usuarios.index', [
+            'roles' => Role::all(),
+            'estados' => ['ACTIVO', 'INACTIVO'],
+            'provincias' => ['COTOPAXI', 'TUNGURAHUA'],
+        ]);
     }
 
     /**

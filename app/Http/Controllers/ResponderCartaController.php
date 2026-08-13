@@ -2,53 +2,164 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ResponderCartaAgradecimientoAction;
+use App\Actions\ResponderCartaContestacionAction;
+use App\Actions\ResponderCartaIniciadaAction;
+use App\Actions\ResponderCartaPresentacionMayorAction;
+use App\Actions\ResponderCartaPresentacionMenorAction;
+use App\Http\Requests\Cartas\ResponderCartaAgradecimientoRequest;
+use App\Http\Requests\Cartas\ResponderCartaContestacionRequest;
+use App\Http\Requests\Cartas\ResponderCartaIniciadaRequest;
+use App\Http\Requests\Cartas\ResponderCartaPresentacionMayorRequest;
+use App\Http\Requests\Cartas\ResponderCartaPresentacionMenorRequest;
 use App\Models\Carta;
 use App\Models\Ninio;
-use App\Notifications\EnviarCartaRespondidaGestor;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\Encryption\DecryptException;
-use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class ResponderCartaController extends Controller
 {
     /**
+     * SEG-015: numero_child es la única credencial de este flujo público.
+     * Antes viajaba en texto plano en la URL de index() (`/cartas-ninio/{numero_child}`),
+     * quedando guardado en el historial del navegador, compartible por
+     * captura de pantalla, sin expiración. Ahora se valida una sola vez en
+     * ingresar() y se guarda en una ventana corta de sesión (no la sesión
+     * HTTP completa, un límite propio más corto) para el resto de la
+     * navegación de "mis cartas".
+     */
+    private const SESION_NINIO = 'responder_carta_ninio_numero_child';
+    private const SESION_NINIO_EXPIRA = 'responder_carta_ninio_expira';
+    private const SESION_DURACION_MINUTOS = 45;
+
+    /**
+     * SEG-015 (parte 2): a dónde volver después de ingresar() cuando
+     * ver()/procesarRespuesta() rebotan a alguien sin sesión — así no
+     * pierde la carta puntual que quería ver (no lo mandamos a la lista
+     * general a buscarla de nuevo).
+     */
+    private const SESION_INTENDED = 'responder_carta_intended_url';
+
+    /**
+     * Formulario público de ingreso: pide el numero_child.
+     */
+    public function mostrarFormularioIngreso()
+    {
+        return view('responder-cartas.ingresar');
+    }
+
+    /**
+     * Valida el numero_child y abre la ventana de sesión (ver SESION_* arriba).
+     * Limitado por el rate limiter 'numero-child' (RouteServiceProvider) —
+     * los valores reales no son de alta entropía (verificado: rangos
+     * claramente secuenciales), así que sin límite de intentos el número
+     * era enumerable.
+     */
+    public function ingresar(Request $request)
+    {
+        $request->validate([
+            'numero_child' => 'required|string|max:255',
+        ]);
+
+        $ninio = Ninio::where('numero_child', $request->numero_child)->first();
+
+        if (!$ninio) {
+            return back()->withErrors(['numero_child' => 'Número child no encontrado.'])->withInput();
+        }
+
+        Session::put(self::SESION_NINIO, $ninio->numero_child);
+        Session::put(self::SESION_NINIO_EXPIRA, now()->addMinutes(self::SESION_DURACION_MINUTOS));
+
+        $destino = Session::pull(self::SESION_INTENDED);
+
+        return redirect($destino ?: route('cartas-ninio.index'));
+    }
+
+    /**
+     * Cierra la ventana de sesión abierta por ingresar()/ver(). Pensado
+     * para dispositivos compartidos (una computadora de la comunidad, un
+     * teléfono familiar) donde, sin esto, la próxima persona que entre a
+     * `cartas-ninio` dentro de los 45 min vería las cartas del niño
+     * anterior sin volver a pedir el número.
+     */
+    public function salir()
+    {
+        Session::forget([self::SESION_NINIO, self::SESION_NINIO_EXPIRA, self::SESION_INTENDED]);
+        Session::flash('success', 'Sesión cerrada.');
+
+        return redirect()->route('cartas-ninio.ingresar');
+    }
+
+    /**
      * Display a listing of the resource.
      */
-    public function index($ninio_numero_child)
+    public function index()
     {
-        
-        try {
-            // $ninio_decrypt = Crypt::decryptString($ninio_numero_child);
-            $ninio=Ninio::where('numero_child',$ninio_numero_child)->firstOrFail();
-            $data = array(
-                'ninio'=>$ninio,
-                'cartas'=>$ninio->cartas->where('estado','Enviado')
-            );
-            return view('responder-cartas.index',$data);    
-        } catch (DecryptException $e) {
-         return abort(404);
+        $ninio = $this->ninioDeSesion();
+
+        if (!$ninio) {
+            Session::flash('info', 'Tu sesión expiró o no ingresaste tu número. Volvé a ingresarlo.');
+            return redirect()->route('cartas-ninio.ingresar');
         }
+
+        $data = array(
+            'ninio'=>$ninio,
+            'cartas'=>$ninio->cartas->where('estado','Enviado')
+        );
+        return view('responder-cartas.index',$data);
+    }
+
+    /**
+     * Resuelve el niño de la ventana de sesión abierta por ingresar(),
+     * limpiándola si expiró o nunca se abrió.
+     */
+    private function ninioDeSesion(): ?Ninio
+    {
+        $numeroChild = Session::get(self::SESION_NINIO);
+        $expira = Session::get(self::SESION_NINIO_EXPIRA);
+
+        if (!$numeroChild || !$expira || now()->greaterThan($expira)) {
+            Session::forget([self::SESION_NINIO, self::SESION_NINIO_EXPIRA]);
+            return null;
+        }
+
+        return Ninio::where('numero_child', $numeroChild)->first();
     }
 
     public function ver($idcarta,$ninio_numero_child) {
-       
+
         try {
             $idcarta_decrypt = Crypt::decryptString($idcarta);
             $ninio_numero_child_decrypt = Crypt::decryptString($ninio_numero_child);
             $carta=Carta::findOrFail($idcarta_decrypt);
-            if($carta->ninio->numero_child===$ninio_numero_child_decrypt){
-                return view('responder-cartas.todas-cartas',['carta'=>$carta,'ninio'=>$carta->ninio]);
-            }else{
+
+            if($carta->ninio->numero_child!==$ninio_numero_child_decrypt){
                 return abort(404);
             }
-            
+
+            // SEG-015 (parte 2): el link cifrado ya no alcanza por sí solo —
+            // el correo/notificación que lo contiene se puede extraviar,
+            // quedar cacheado, reenviarse por error, etc. Ahora hace falta
+            // además una sesión activa que coincida con este niño. Si no la
+            // hay, se manda a ingresar el numero_child y se recuerda esta
+            // URL puntual para volver directo acá (no a la lista general).
+            $sesionNinio = $this->ninioDeSesion();
+            if (!$sesionNinio || $sesionNinio->numero_child !== $ninio_numero_child_decrypt) {
+                Session::put(self::SESION_INTENDED, url()->current());
+                Session::flash('info', 'Ingresá tu número child para ver esta carta.');
+                return redirect()->route('cartas-ninio.ingresar');
+            }
+
+            // Renueva la ventana de sesión para que "Regresar a mis cartas"
+            // siga funcionando sin pedir el número de nuevo.
+            Session::put(self::SESION_NINIO, $carta->ninio->numero_child);
+            Session::put(self::SESION_NINIO_EXPIRA, now()->addMinutes(self::SESION_DURACION_MINUTOS));
+
+            return view('responder-cartas.todas-cartas',['carta'=>$carta,'ninio'=>$carta->ninio]);
         } catch (DecryptException $e) {
             return abort(404);
         }
@@ -58,256 +169,221 @@ class ResponderCartaController extends Controller
     {
         try {
             $carta=Carta::findOrFail(Crypt::decryptString($idCarta));
+
+            // SEG-015 (parte 2): mismo criterio que ver() — el ID cifrado
+            // del archivo no alcanza solo, exige sesión activa del dueño.
+            // Es un recurso embebido (img/iframe), así que ante la falta de
+            // sesión se corta con 404 en vez de redirigir a una página de
+            // login (que no tendría sentido dentro de un <img>/<iframe>).
+            $sesionNinio = $this->ninioDeSesion();
+            if (!$sesionNinio || $sesionNinio->id !== $carta->ninio_id) {
+                return abort(404);
+            }
+
             switch ($tipo) {
                 case 'foto':
-                    return Storage::get($carta->archivo_imagen);        
-                    break;
+                    return Storage::get($carta->archivo_imagen);
                 case 'pdf':
-                    return Storage::response($carta->archivo_pdf);        
-                    break;
+                    return Storage::response($carta->archivo_pdf);
                 default:
                     return '';
-                    break;
             }
         } catch (DecryptException $th) {
             return abort(404);
         }
     }
 
-    public function guardarContestacion(Request $request) {
-        $request->validate([
-            'id'=>'required',
-            'imagen'=>'required',
-            'detalle'=>'required'
-        ]);
-        $detalle= '<p><b>Hola</b> '. $request->nombre_patrocinador.
-                    ', agradesco por la '.$request->agradezco_por.'</p>'.
-                    '<p>Te cuento que '.$request->te_cuento_que.'</p>'.
-                    '<p><b>Es hora de hacer una pregunta.</b></p>'.
-                    '<p>¿ '.$request->pregunta_al_patrocinador.' ?</p>'.
-                    '<p><b>Aquí mi despedida.</b></p>'.
-                    '<p>'.$request->detalle.'</p>';
-        $request['detalle']=$detalle;
-        return $this->guardarArchivo($request);
+    public function guardarContestacion(ResponderCartaContestacionRequest $request, ResponderCartaContestacionAction $action)
+    {
+        return $this->procesarRespuesta($request, fn (Carta $carta, UploadedFile $imagen, ?UploadedFile $fotoFamilia) => $action->ejecutar(
+            $carta,
+            $request->nombre_patrocinador,
+            $request->agradezco_por,
+            $request->te_cuento_que,
+            $request->pregunta_al_patrocinador,
+            $request->detalle,
+            $imagen,
+            $fotoFamilia
+        ));
     }
 
-    public function guardarAgradecimiento(Request $request) {
-        $request->validate([
-            'id'=>'required',
-            'imagen'=>'required',
-            'detalle'=>'required'
-        ]);
-        $detalle= '<p><b>Hola</b> '. $request->nombre_patrocinador.
-                    ', Agradezco por el valor enviado de '.$request->agradezco_por.'</p>'.
-                    '<p>Tu regalo lo voy a usar para '.$request->regalo_usar_para.'</p>'.
-                    '<p>Te cuento que '.$request->te_cuento_que.'</p>'.
-                    '<p><b>Es hora de hacer una pregunta.</b></p>'.
-                    '<p>¿ '.$request->pregunta_al_patrocinador.' ?</p>'.
-                    '<p><b>Aquí mi despedida.</b></p>'.
-                    '<p>'.$request->detalle.'</p>';
-
-        $request['detalle']=$detalle;
-        return $this->guardarArchivo($request);
+    public function guardarAgradecimiento(ResponderCartaAgradecimientoRequest $request, ResponderCartaAgradecimientoAction $action)
+    {
+        return $this->procesarRespuesta($request, fn (Carta $carta, UploadedFile $imagen, ?UploadedFile $fotoFamilia) => $action->ejecutar(
+            $carta,
+            $request->nombre_patrocinador,
+            $request->agradezco_por,
+            $request->regalo_usar_para,
+            $request->te_cuento_que,
+            $request->pregunta_al_patrocinador,
+            $request->detalle,
+            $imagen,
+            $fotoFamilia
+        ));
     }
-    public function guardarIniciada(Request $request)  {
-        $request->validate([
-            'id'=>'required',
-            'imagen'=>'required',
-            'detalle'=>'required'
-        ]);
-        $detalle= '<p><b>Hola</b> '. $request->nombre_patrocinador.'</p>'.
-                    '<p>Te cuento que '.$request->te_cuento_que.'</p>'.
-                    '<p>Gracias a ChildFund, en CACTU aprendí '.$request->en_cactu_aprendi.'</p>'.
-                    '<p><b>Es hora de hacer una pregunta.</b></p>'.
-                    '<p>¿ '.$request->pregunta_al_patrocinador.' ?</p>'.
-                    '<p><b>Aquí mi despedida.</b></p>'.
-                    '<p>'.$request->detalle.'</p>';
 
-        $request['detalle']=$detalle;
-        return $this->guardarArchivo($request);
-   }
-    public function guardarArchivo(Request $request)
+    public function guardarIniciada(ResponderCartaIniciadaRequest $request, ResponderCartaIniciadaAction $action)
+    {
+        return $this->procesarRespuesta($request, fn (Carta $carta, UploadedFile $imagen, ?UploadedFile $fotoFamilia) => $action->ejecutar(
+            $carta,
+            $request->nombre_patrocinador,
+            $request->te_cuento_que,
+            $request->en_cactu_aprendi,
+            $request->pregunta_al_patrocinador,
+            $request->detalle,
+            $imagen,
+            $fotoFamilia
+        ));
+    }
+
+    public function guardarPresentacionMayor(ResponderCartaPresentacionMayorRequest $request, ResponderCartaPresentacionMayorAction $action)
+    {
+        return $this->procesarRespuesta($request, fn (Carta $carta, UploadedFile $imagen, ?UploadedFile $fotoFamilia) => $action->ejecutar(
+            $carta,
+            $request->hola,
+            $request->soy,
+            $request->meDicen,
+            $request->edad,
+            $request->miMejorAmigo,
+            $request->esMejorAmigo,
+            $request->loquehago,
+            $request->miSueno,
+            $request->dondeAprendo,
+            $request->gustaAprendes,
+            $request->mePaso,
+            $request->meGustaria,
+            $request->miFamilia,
+            $request->nuestraPro,
+            $request->idioma,
+            $request->lugarFavorito,
+            $request->comidaTipica,
+            $request->comer,
+            $request->masMeGusta,
+            $request->pregunta,
+            $request->despedida,
+            $imagen,
+            $fotoFamilia
+        ));
+    }
+
+    public function guardarPresentacionMenor(ResponderCartaPresentacionMenorRequest $request, ResponderCartaPresentacionMenorAction $action)
+    {
+        return $this->procesarRespuesta($request, fn (Carta $carta, UploadedFile $imagen, ?UploadedFile $fotoFamilia) => $action->ejecutar(
+            $carta,
+            $request->hola,
+            $request->escribo,
+            $request->mi,
+            $request->queel,
+            $request->cumple,
+            $request->noSabe,
+            $request->ademas,
+            $request->leGusta,
+            $request->dondeAprendo,
+            $request->gustaAprendes,
+            $request->mePaso,
+            $request->meGustaria,
+            $request->miNombre,
+            $request->ysoy,
+            $request->de,
+            $request->mifamila,
+            $request->nuestraPro,
+            $request->idioma,
+            $request->lugarFavorito,
+            $request->comidaTipica,
+            $request->ya,
+            $request->comer,
+            $request->masMeGusta,
+            $request->pregunta,
+            $request->despedida,
+            $imagen,
+            $fotoFamilia
+        ));
+    }
+
+    /**
+     * Resuelve la carta (id cifrado en el link + sesión de niño, ver
+     * SEG-015), autoriza que aún no esté respondida, convierte las imágenes
+     * base64 recibidas del formulario web a UploadedFile temporales, delega
+     * el armado del detalle + guardado en la Action del tipo correspondiente
+     * (via $ejecutarAction) y responde con el redirect que espera la vista.
+     *
+     * Centraliza lo que antes era guardarArchivo() — ARQ-001.
+     */
+    private function procesarRespuesta(Request $request, \Closure $ejecutarAction)
     {
         try {
-            DB::beginTransaction();
-            $carta=Carta::findOrFail(Crypt::decryptString($request->id));
-            
-            $this->authorize('responderCartaXninio',$carta);
-            
-            $url_foto_ninio=$this->guardarImagenBase64($carta->id.'.png',$request->input('imagen'),'foto_personal');
+            $carta = Carta::findOrFail(Crypt::decryptString($request->id));
 
-            if($request->foto_familia){
-                $carta->archivo_familia_ninio=$this->guardarImagenBase64($carta->id.'.png',$request->input('foto_familia'),'foto_familia');
+            // SEG-006: el id de la carta viaja cifrado pero por sí solo no
+            // prueba que quien responde sea el niño dueño; se exige además
+            // el numero_child cifrado (mismo patrón que ver()).
+            if (!$request->filled('ninio') || Crypt::decryptString($request->ninio) !== $carta->ninio->numero_child) {
+                return abort(404);
             }
 
-            $carta->archivo_imagen_ninio=$url_foto_ninio;
-            $carta->detalle=$request->detalle;
-            $carta->estado='Respondida';
-            $carta->fecha_respondida=Carbon::now();
-            $carta->save();
-            $carta->gestor->notify(new EnviarCartaRespondidaGestor($carta));
-            DB::commit();
-            Session::flash('success','La respuesta a su carta ha sido enviada satisfactoriamente.');
-            return redirect()->route('cartas-ninio.index',Crypt::encryptString($carta->ninio->numero_child));
+            // SEG-015 (parte 2): tampoco alcanza con poseer los campos
+            // cifrados del formulario (pueden quedar cacheados en el HTML de
+            // una página vieja, o replicarse fuera del formulario real) —
+            // hace falta además la sesión activa abierta en ingresar()/ver().
+            $sesionNinio = $this->ninioDeSesion();
+            if (!$sesionNinio || $sesionNinio->id !== $carta->ninio_id) {
+                return abort(404);
+            }
+
+            $this->authorize('responderCartaXninio', $carta);
+
+            $imagen = $this->crearArchivoTemporalDesdeBase64($request->input('imagen'), $carta->id.'.png');
+            $fotoFamilia = $request->foto_familia
+                ? $this->crearArchivoTemporalDesdeBase64($request->foto_familia, $carta->id.'.png')
+                : null;
+
+            try {
+                $carta = $ejecutarAction($carta, $imagen, $fotoFamilia);
+            } finally {
+                $this->eliminarSiExiste($imagen->getPathname());
+                if ($fotoFamilia) {
+                    $this->eliminarSiExiste($fotoFamilia->getPathname());
+                }
+            }
+
+            // Quien llega acá ya demostró ser dueño de $carta->ninio (chequeo
+            // de más arriba en este método) — sea que haya entrado por
+            // ingresar() o por un link directo de notificación (ver() sin
+            // pasar por el formulario). Se abre/renueva la ventana de sesión
+            // para que index() pueda mostrarle el resto de sus cartas sin
+            // pedirle el número de nuevo.
+            Session::put(self::SESION_NINIO, $carta->ninio->numero_child);
+            Session::put(self::SESION_NINIO_EXPIRA, now()->addMinutes(self::SESION_DURACION_MINUTOS));
+
+            Session::flash('success', 'La respuesta a su carta ha sido enviada satisfactoriamente.');
+            return redirect()->route('cartas-ninio.index');
         } catch (DecryptException $e) {
-            DB::rollBack();
             return abort(404);
         }
     }
 
-    public function guardarImagenBase64($nombreImagen,$imagenBase64,$tipo) {
-        $tempFolderPath='temp';
+    private function crearArchivoTemporalDesdeBase64(string $imagenBase64, string $nombreArchivo): UploadedFile
+    {
+        $tempFolderPath = 'temp';
         if (!Storage::exists($tempFolderPath)) {
             Storage::makeDirectory($tempFolderPath);
         }
         $tempDirectoryPath = Storage::path($tempFolderPath);
-        list(, $imagenCodificada) = explode(';', $imagenBase64);
-        list(, $imagenCodificada) = explode(',', $imagenCodificada);
+
+        [, $imagenCodificada] = explode(';', $imagenBase64);
+        [, $imagenCodificada] = explode(',', $imagenCodificada);
         $imagenDecodificada = base64_decode($imagenCodificada);
-        // Guardar la imagen decodificada en una ubicación temporal
-        $rutaTempImagen = $tempDirectoryPath . '/' . $nombreImagen;
+
+        $rutaTempImagen = $tempDirectoryPath.'/'.uniqid().'-'.$nombreArchivo;
         file_put_contents($rutaTempImagen, $imagenDecodificada);
-        
-        // Mover la imagen al almacenamiento de Laravel
-        
-        if($tipo==='foto_personal'){
-            $rutaImagen = Storage::putFileAs('public/cartas/archivo_imagen_ninio', new File($rutaTempImagen), $nombreImagen);
-        }else{
-            $rutaImagen = Storage::putFileAs('public/cartas/archivo_familia_ninio', new File($rutaTempImagen), $nombreImagen);
+
+        return new UploadedFile($rutaTempImagen, $nombreArchivo, 'image/png', null, true);
+    }
+
+    private function eliminarSiExiste(string $rutaArchivo): void
+    {
+        if (file_exists($rutaArchivo)) {
+            unlink($rutaArchivo);
         }
-        
-        
-        // Eliminar la imagen temporal
-        unlink($rutaTempImagen);
-        
-        return $rutaImagen;
     }
-
-
-    public function guardarPresentacionMayor(Request $request) {
-
-        $request->validate([
-            'imagen'=>'required',
-            'foto_familia'=>'required',
-            'id'=>'required',
-            'hola'=>'required',
-            'soy'=>'required',
-            'meDicen'=>'required',
-            'edad'=>'required',
-            'miMejorAmigo'=>'required',
-            'esMejorAmigo'=>'required',
-            'loquehago'=>'required',
-            'miSueno'=>'required',
-            'dondeAprendo'=>'required',
-            'gustaAprendes'=>'required',
-            'mePaso'=>'required',
-            'meGustaria'=>'required',
-            'miFamilia'=>'required',
-            'nuestraPro'=>'required',
-            'idioma'=>'required',
-            'lugarFavorito'=>'required',
-            'comidaTipica'=>'required',
-            'comer'=>'required',
-            'masMeGusta'=>'required',
-            'pregunta'=>'required',
-            'despedida'=>'required'
-        ]);
-        
-       $detalle= '<p><b>Hola '. $request->hola.
-        '</b></p><p> Soy '.$request->soy.
-        ' y mis amigos me dicen '.$request->meDicen.
-        '</p><p> tengo '.$request->edad.
-        '</p><p> Mi mejor amigo se llama '.$request->miMejorAmigo.
-        ' es mi mejor amigo porque, '.$request->esMejorAmigo.
-        '</p><p> Lo que maś me gusta hacer es, '.$request->loquehago.
-        '</p><p> Cuando sea grande mi sueño es '.$request->miSueno.
-        '</p><p> El lugar donde aprendo es, '.$request->dondeAprendo.
-        ' lo que me gusta aprender es, '.$request->gustaAprendes.
-        '</p><p> Lo más importante que me pasó últimamente es '.$request->mePaso.
-        '</p><p> Lo que me gustaría aprender en el programa de ChildFund es '.$request->meGustaria.
-        '</p><p> Esta es mi famila '.$request->miFamilia.
-        '</p><p><b>También quiero contarte del lugar donde vivo.'.
-        '</b></p><p> Nuestra provincia se llama '.$request->nuestraPro.
-        ' y el idioma que hablamos es '.$request->idioma.
-        '</p><p>Donde nosotros vivimos hay sitios muy hermosos,'.
-        ' mi lugar favorito es '.$request->lugarFavorito.
-        '</p><p>También tenemos comida típica, por ejemplo:'.
-        '</p><p> La comida típica de esta región es '.$request->comidaTipica.
-        ' y a mi me gusta comer '.$request->comer.
-        '</p><p> De nuestras tradiciones, lo que más me gusta es '.$request->masMeGusta.
-        '</p><p><b> Me gustaría hacerte una pregunta</b></p><p>¿ '.$request->pregunta.
-        '?</p><p> Cuéntale por qué quisieras que te conteste tu patrocinador, envíale un mensaje de despedida </p><p>'.$request->despedida.
-        '</p>';
-
-        $request['detalle']=$detalle;
-        return $this->guardarArchivo($request);
-        
-
-    }
-
-    public function guardarPresentacionMenor(Request $request) {
-
-        $request->validate([
-            'imagen'=>'required',
-            'foto_familia'=>'required',
-            'id'=>'required',
-            'hola'=>'required',
-            'escribo'=>'required',
-            'mi'=>'required',
-            'queel'=>'required',
-            'cumple'=>'required',
-            'noSabe'=>'required',
-            'ademas'=>'required',
-            'leGusta'=>'required',
-            'dondeAprendo'=>'required',
-            'gustaAprendes'=>'required',
-            'mePaso'=>'required',
-            'meGustaria'=>'required',
-            'miNombre'=>'required',
-            'ysoy'=>'required',
-            'de'=>'required',
-            'mifamila'=>'required',
-            'nuestraPro'=>'required',
-            'idioma'=>'required',
-            'lugarFavorito'=>'required',
-            'comidaTipica'=>'required',
-            'ya'=>'required',
-            'comer'=>'required',
-            'masMeGusta'=>'required',
-            'pregunta'=>'required',
-            'despedida'=>'required',
-        ]);
-    
-        $detalle=
-        '<p><b>Hola '.$request->hola.'</b></p>'.
-        '<p>Escribo a nombre de '.$request->escribo.''.
-        ' mi '.$request->mi.' '.
-        ', que el'.$request->queel.'</p>'.
-        '<p>Cumple '.$request->cumple.' '.
-        'de edad y aún no sabe escribir pero '.$request->noSabe.'</p>'.
-        '<p>Además a '.$request->ademas.' '.
-        'le gusta'.$request->leGusta.'</p>'.
-        '<p>El lugar donde aprende es '.$request->dondeAprendo.'</p>'.
-        '<p>En este mes aprendimos '.$request->gustaAprendes.' '.
-        'y lo más importante que nos pasó últimamente es '.$request->mePaso.'</p>'.
-        '<p>Lo que esperamos aprender con el programa de ChildFund es'.$request->meGustaria.'</p>'.
-        '<p>Mi nombre es '.$request->miNombre.' '.
-        'y soy'.$request->ysoy.' '.
-        'de'.$request->de.'</p>'.
-        '<p>Los otros miembros de nuestra familia son '.$request->mifamila.'</p>'.
-        '<p>Nosotros vivimos en la provincia de '.$request->nuestraPro.' '.
-        'y el idioma que hablamos es'.$request->idioma.'</p>'.
-        '<p>Nuestra provincia tiene sitios muy hermosos, a nosotros nos gusta ir a '.$request->lugarFavorito.'</p>'.
-        '<p>También tenemos comida típica, por ejemplo '.$request->comidaTipica.' '.
-        'y a '.$request->ya.' '.
-        'le gusta'.$request->comer.'</p>'.
-        '<p>De nuestras tradiciones, la que compartimos juntos es '.$request->masMeGusta.'</p>'.
-        '<p>Nos gustaría saber más sobre ti y tu familia y hacerles una pregunta</p><p><b>¿ '.$request->pregunta.'?</b></p>'.
-        '<p>Cuéntale por qué quisieras que te conteste tu patrocinador, envíale un mensaje de despedida:</p><p> '.$request->despedida.'</p>';
-        
-        $request['detalle']=$detalle;
-        return $this->guardarArchivo($request);
-    }
-    
-
 }

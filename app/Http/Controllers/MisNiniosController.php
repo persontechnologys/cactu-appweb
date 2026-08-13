@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\DataTables\MisNinioDataTable;
 use App\Models\Comunidad;
 use App\Models\Ninio;
 use Carbon\Carbon;
@@ -16,13 +17,9 @@ class MisNiniosController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(MisNinioDataTable $dataTable)
     {
-        $data = array(
-            'ninios'=>Auth::user()->ninios
-        );
-        return view('mis-ninios.index',$data);
-        
+        return $dataTable->render('mis-ninios.index');
     }
 
     /**

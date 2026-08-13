@@ -9,7 +9,6 @@
 <form action="{{ route('usuarios.update',$user->id) }}" method="POST" id="formUser" autocomplete="off">
     @csrf
     @method('PUT')
-    <input type="hidden" name="id" value="{{ $user->id }}">
     <div class="card">
         
         <div class="card-body row">

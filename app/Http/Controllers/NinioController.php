@@ -19,7 +19,12 @@ class NinioController extends Controller
     public function index(NinioDataTable $dataTable)
     {
         $this->authorize('viewAny', Ninio::class);
-        return $dataTable->render('ninios.index');
+
+        return $dataTable->render('ninios.index', [
+            'comunidades' => Comunidad::select('id', 'nombre')->orderBy('nombre')->get(),
+            'estados' => ['ACTIVO', 'INACTIVO'],
+            'generos' => ['Male', 'Female'],
+        ]);
     }
 
     /**

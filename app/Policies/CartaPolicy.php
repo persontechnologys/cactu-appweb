@@ -9,7 +9,9 @@ use Illuminate\Auth\Access\Response;
 class CartaPolicy
 {
     
-    public function ver(User $user, Carta $carta): bool
+    // controla si se muestra el link "Ver"/"Descargar PDF" en la vista de
+    // cartas (no es autorización de backend, eso es view()/update() — ARQ-004)
+    public function mostrarEnlaceVer(User $user, Carta $carta): bool
     {
         if($carta->estado==='Respondida'){
             if($user->hasRole('ADMINISTRADOR')){

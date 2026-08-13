@@ -7,11 +7,19 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Crypt;
-use Kutia\Larafirebase\Messages\FirebaseMessage;
 
-class EnviarNotificacionCartaNueva extends Notification
+class EnviarNotificacionCartaNueva extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    /**
+     * Reintentos ante errores transitorios de Firebase (red, cuota, servidor
+     * caído) — FIREBASE-001. Un token inválido no llega a agotar reintentos:
+     * FirebaseService lo detecta (NotFound) y limpia sin relanzar la excepción.
+     */
+    public $tries = 3;
+    public $backoff = 30;
+
     protected $carta;
     /**
      * Create a new notification instance.
@@ -34,7 +42,7 @@ class EnviarNotificacionCartaNueva extends Notification
         if($ninio->email){
             array_push($data,'mail');
         }
-        if($ninio->fcm_token){
+        if($ninio->dispositivos()->exists()){
             array_push($data,'firebase');
         }
         return $data;
@@ -69,14 +77,14 @@ class EnviarNotificacionCartaNueva extends Notification
             //
         ];
     }
-    public function toFirebase($notifiable)
+    /**
+     * @return array{titulo: string, cuerpo: string}
+     */
+    public function toFirebase($notifiable): array
     {
-        $ninio=$this->carta->ninio;
-        $deviceTokens =$ninio->fcm_token;
-        
-        return   (new FirebaseMessage)
-            ->withTitle('Nueva carta')
-            ->withBody('Tiene una nueva carta de '.$this->carta->tipo.' por responder.')
-            ->asNotification($deviceTokens);
+        return [
+            'titulo' => 'Nueva carta',
+            'cuerpo' => 'Tiene una nueva carta de '.$this->carta->tipo.' por responder.',
+        ];
     }
 }

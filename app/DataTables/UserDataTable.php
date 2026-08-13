@@ -33,7 +33,31 @@ class UserDataTable extends DataTable
      */
     public function query(User $model): QueryBuilder
     {
-        return $model->newQuery();
+        return $this->applyFilters($model->newQuery());
+    }
+
+    /**
+     * Aplicar filtros de búsqueda
+     */
+    private function applyFilters($query)
+    {
+        $request = request();
+
+        if ($request->filled('rol_filter') && $request->rol_filter !== 'all') {
+            $query->whereHas('roles', function ($q) use ($request) {
+                $q->where('id', $request->rol_filter);
+            });
+        }
+
+        if ($request->filled('estado_filter') && $request->estado_filter !== 'all') {
+            $query->where('estado', $request->estado_filter);
+        }
+
+        if ($request->filled('provincia_filter') && $request->provincia_filter !== 'all') {
+            $query->where('provincia', $request->provincia_filter);
+        }
+
+        return $query;
     }
 
     /**

@@ -47,11 +47,33 @@ class NinioDataTable extends DataTable
         // por comunidad usado en App\DataTables\Carta\NinioDataTable por si el
         // método se invocara alguna vez fuera de esa ruta.
         $user = Auth::user();
-        if ($user && $user->hasRole('ADMINISTRADOR')) {
-            return $model->newQuery();
+        $query = ($user && $user->hasRole('ADMINISTRADOR'))
+            ? $model->newQuery()
+            : $model->whereIn('comunidad_id', $user?->comunidades->pluck('id') ?? []);
+
+        return $this->applyFilters($query);
+    }
+
+    /**
+     * Aplicar filtros de búsqueda
+     */
+    private function applyFilters($query)
+    {
+        $request = request();
+
+        if ($request->filled('comunidad_filter') && $request->comunidad_filter !== 'all') {
+            $query->where('comunidad_id', $request->comunidad_filter);
         }
 
-        return $model->whereIn('comunidad_id', $user?->comunidades->pluck('id') ?? []);
+        if ($request->filled('estado_filter') && $request->estado_filter !== 'all') {
+            $query->where('estado', $request->estado_filter);
+        }
+
+        if ($request->filled('genero_filter') && $request->genero_filter !== 'all') {
+            $query->where('genero', $request->genero_filter);
+        }
+
+        return $query;
     }
 
     /**

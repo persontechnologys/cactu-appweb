@@ -8,7 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class EnviarCartaRespondidaGestor extends Notification
+class EnviarCartaRespondidaGestor extends Notification implements ShouldQueue
 {
     use Queueable;
 

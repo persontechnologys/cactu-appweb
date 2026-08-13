@@ -12,7 +12,20 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Patrón compatible con cPanel compartido (sin Supervisor/Redis):
+        // el cron dispara schedule:run cada minuto, y este comando procesa
+        // la cola `database` y se detiene solo. Ver PERF-001 y
+        // docs/auditoria/infraestructura-actual.md.
+        $schedule->command('queue:work --stop-when-empty')
+            ->everyMinute()
+            ->withoutOverlapping();
+
+        // Huérfanos de storage/app/temp: solo aparecen si un request de
+        // ResponderCartaController murió antes de su limpieza normal
+        // (cliente desconectado, timeout, OOM). Ver PDF-001/infraestructura-actual.md.
+        $schedule->command('temp:limpiar')
+            ->daily()
+            ->withoutOverlapping();
     }
 
     /**
