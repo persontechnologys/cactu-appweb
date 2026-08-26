@@ -540,3 +540,23 @@
 **Solución propuesta:** replicar el patrón ya validado de `cartas/index` en los otros 3 listados, confirmando primero con el usuario qué campos filtrar en cada uno (ej. `ninios` por comunidad/estado; `usuarios` por rol; `comunidad` por gestor asignado).
 **Fase sugerida:** Fase 3 — UX/UI. Ver `docs/auditoria/ux-ui-dashboard-vistas.md`, sección 6.
 **Estado:** Cerrado (2026-08-08). Se replicó el patrón de `cartas/index` (card colapsable + filtros GET + AJAX con auto-aplicación) en los 3 listados: `ninios` (Comunidad, Estado, Género), `usuarios` (Rol, Estado, Provincia), `comunidad` (Gestor asignado). Detalle en `docs/cambios/changelog.md`.
+
+---
+
+**ID:** SEG-016
+**Módulo:** Usuarios
+**Problema/mejora:** no existía forma de que un ADMINISTRADOR iniciara sesión como otro usuario ("acceder"/impersonar) para diagnosticar problemas reportados sin conocer su contraseña
+**Tipo:** MEJORA (funcionalidad nueva, pedida explícitamente por el usuario)
+**Severidad:** N/A — no es una vulnerabilidad, es control de acceso sobre una capacidad nueva
+**Origen:** pedido explícito del usuario: "solo el usuario con Rol ADMINISTRADOR puede hacer login a cualquier usuario".
+**Comportamiento nuevo:**
+- `UserController::acceder($id)` (`POST /usuarios/{usuario}/acceder`, dentro del grupo `role:ADMINISTRADOR` de `routes/web.php` — misma capa que protege el resto de `/usuarios/*`) guarda el id del administrador en `session('impersonador_id')` y hace `Auth::login($usuario)`.
+- `UserPolicy::acceder()` (defensa en profundidad, igual patrón que `viewAny`/`create`/`update`/`delete`): exige rol ADMINISTRADOR y que no sea sobre sí mismo.
+- Sin anidamiento: si ya hay una impersonación activa, un segundo intento de `acceder()` se corta (`Session::has('impersonador_id')`); además, en la práctica el usuario impersonado ya no tiene rol ADMINISTRADOR, así que el middleware `role:` de la ruta lo bloquea igual, dos capas independientes.
+- `UserController::volver()` (`POST /usuarios-volver`, nombrada `usuarios.volver`) restaura la sesión del administrador original y limpia `impersonador_id`. Deliberadamente **fuera** del grupo `role:ADMINISTRADOR`: mientras se impersona a un GESTOR, el usuario autenticado ya no tiene ese rol, así que la ruta de salida no puede vivir detrás del mismo middleware o quedaría inalcanzable.
+- Mientras dura la impersonación, `layouts/app.blade.php` muestra un banner fijo ("Está navegando como X — Volver a mi cuenta") en toda pantalla del panel.
+- En la tabla de usuarios, la opción "Acceder" del menú de acciones (`usuarios/action.blade.php` → `x-tabla-acciones`) se calcula con `auth()->user()->can('acceder', $user)` — la misma Policy, sin duplicar la regla de "no sobre uno mismo" en la vista.
+**Archivos:** `app/Policies/UserPolicy.php`, `app/Http/Controllers/UserController.php`, `routes/web.php`, `resources/views/components/tabla-acciones.blade.php`, `resources/views/usuarios/action.blade.php`, `resources/views/layouts/app.blade.php`, `tests/Feature/Seguridad/ImpersonacionTest.php` (nuevo).
+**Impacto Web:** un ADMINISTRADOR gana la opción "Acceder" en `/usuarios`; ningún otro rol la ve ni puede invocar la ruta directamente. **Impacto API:** ninguno — funcionalidad exclusiva del panel web. **Impacto React Native:** ninguno.
+**Pruebas:** `tests/Feature/Seguridad/ImpersonacionTest.php` (6 casos): un GESTOR no puede acceder como otro usuario (403); un ADMINISTRADOR sí puede (login cambia, `impersonador_id` queda en sesión, banner visible); un ADMINISTRADOR no puede acceder como sí mismo (403); no se puede anidar una impersonación; se puede volver a la cuenta real y el panel de usuarios vuelve a estar disponible; `volver()` sin impersonación activa no falla. Render real vía `tinker` confirmando que el link "Acceder" aparece para otros usuarios y se oculta en la fila del propio administrador. Suite completa: 94/94 en verde (88 + 6 nuevos).
+**Estado:** **Resuelto** (2026-08-26).

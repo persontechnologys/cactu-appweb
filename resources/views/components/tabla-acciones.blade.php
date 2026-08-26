@@ -1,4 +1,4 @@
-@props(['editRoute', 'deleteRoute', 'deleteMsg'])
+@props(['editRoute', 'deleteRoute', 'deleteMsg', 'accederRoute' => null, 'accederMsg' => null])
 
 <div class="d-inline-flex">
     <div class="dropdown">
@@ -7,6 +7,13 @@
         </a>
 
         <div class="dropdown-menu dropdown-menu-end">
+
+            @if($accederRoute)
+            <a href="{{ $accederRoute }}" data-msg="¿Acceder como {{ $accederMsg }}?" onclick="event.preventDefault(); accederComoUsuario(this)" class="dropdown-item">
+                <i class="ph ph-sign-in me-2"></i>
+                Acceder
+            </a>
+            @endif
 
             <a href="{{ $editRoute }}" class="dropdown-item">
                 <i class="ph ph-pencil-simple me-2"></i>

@@ -33,6 +33,7 @@ Route::get('/', function () {
     //Artisan::call('config:cache');
     // migrate
     //Artisan::call('migrate');
+    // Artisan::call('storage:link');
     if (Auth::check()) {
         return redirect()->route('home');
     }
@@ -64,9 +65,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('home', [HomeController::class, 'index'])->name('home');
     Route::post('validarec', [HomeController::class, 'validarec'])->name('validarec');
 
+    // SEG-016: fuera del grupo role:ADMIN a propósito — mientras se está
+    // accediendo como otro usuario, el autenticado ya no tiene ese rol y
+    // necesita poder volver a su cuenta.
+    Route::post('usuarios-volver', [UserController::class, 'volver'])->name('usuarios.volver');
+
     Route::middleware('role:'.config('app.ROLE_ADMIN'))->group(function () {
         // usuarios
         Route::resource('usuarios', UserController::class);
+        Route::post('usuarios/{usuario}/acceder', [UserController::class, 'acceder'])->name('usuarios.acceder');
         // comunidad
         Route::resource('comunidad', ComunidadController::class);
         // ninios

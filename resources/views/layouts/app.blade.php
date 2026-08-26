@@ -5,6 +5,17 @@
 
 <body>
 
+	@if(session('impersonador_id'))
+	<div class="alert alert-warning rounded-0 mb-0 py-2 text-center">
+		<i class="ph-warning-circle me-1"></i>
+		Está navegando como <strong>{{ auth()->user()->name }}</strong>.
+		<form action="{{ route('usuarios.volver') }}" method="POST" class="d-inline">
+			@csrf
+			<button type="submit" class="btn btn-warning btn-sm ms-2">Volver a mi cuenta</button>
+		</form>
+	</div>
+	@endif
+
 	<!-- Main navbar -->
 	<div class="navbar navbar-dark navbar-expand-lg navbar-static border-bottom border-bottom-white border-opacity-10">
 		<div class="container-fluid">
@@ -219,6 +230,10 @@
         @method("DELETE")
     </form>
 
+	<form action="" method="POST" id="formAcceder">
+        @csrf
+    </form>
+
 
 
 	<script>
@@ -246,6 +261,30 @@
                             $('#formEliminar').attr('action', url);
                             $("#formEliminar").submit();
 							
+                        }
+                    },
+                    NO: function () {
+                    }
+                }
+            });
+        }
+
+        function accederComoUsuario(arg){
+            var url = $(arg).attr('href');
+            var msg = $(arg).data('msg')??'...';
+            $.confirm({
+                title: 'Acceder como otro usuario',
+                content: String(msg),
+                type: 'blue',
+                theme: 'modern',
+                icon: 'fa fa-sign-in fa-2x',
+                typeAnimated: true,
+                buttons: {
+                    SI: {
+                        action: function(){
+							block.open();
+                            $('#formAcceder').attr('action', url);
+                            $("#formAcceder").submit();
                         }
                     },
                     NO: function () {

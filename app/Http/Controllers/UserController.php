@@ -17,6 +17,10 @@ use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 class UserController extends Controller
 {
+    // SEG-016: clave de sesión donde se guarda el id del ADMINISTRADOR
+    // mientras está accediendo como otro usuario, para poder volver.
+    private const SESION_IMPERSONADOR = 'impersonador_id';
+
     /**
      * Display a listing of the resource.
      */
@@ -150,5 +154,51 @@ class UserController extends Controller
         return redirect()->route('usuarios.index');
     }
 
-   
+    /**
+     * SEG-016: un ADMINISTRADOR inicia sesión como otro usuario, sin conocer
+     * su contraseña. Guarda su propio id en sesión para poder volver.
+     */
+    public function acceder(string $id)
+    {
+        $usuario = User::findOrFail($id);
+        $this->authorize('acceder', $usuario);
+
+        // no permitir impersonaciones anidadas: si ya se está accediendo
+        // como otro usuario, primero debe volver a su cuenta real.
+        if (Session::has(self::SESION_IMPERSONADOR)) {
+            return back()->with('danger', 'Ya está accediendo como otro usuario. Vuelva a su cuenta antes de acceder a uno distinto.');
+        }
+
+        Session::put(self::SESION_IMPERSONADOR, Auth::id());
+        Auth::login($usuario);
+
+        return redirect()->route('home')->with('success', 'Ha ingresado como '.$usuario->name.'.');
+    }
+
+    /**
+     * SEG-016: vuelve a la cuenta del ADMINISTRADOR que iba impersonando.
+     * No puede vivir dentro del grupo de rutas restringido a ADMINISTRADOR
+     * (routes/web.php): mientras se impersona, el usuario autenticado ya no
+     * tiene ese rol, y quedaría sin forma de salir.
+     */
+    public function volver()
+    {
+        $administradorId = Session::get(self::SESION_IMPERSONADOR);
+        Session::forget(self::SESION_IMPERSONADOR);
+
+        if (!$administradorId) {
+            return redirect()->route('home');
+        }
+
+        $administrador = User::find($administradorId);
+
+        if (!$administrador || !$administrador->hasRole(config('app.ROLE_ADMIN'))) {
+            Auth::logout();
+            return redirect()->route('login');
+        }
+
+        Auth::login($administrador);
+
+        return redirect()->route('usuarios.index')->with('success', 'Volvió a su cuenta.');
+    }
 }

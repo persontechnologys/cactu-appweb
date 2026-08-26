@@ -26,4 +26,11 @@ class UserPolicy
     {
         return $user->hasRole(config('app.ROLE_ADMIN'));
     }
+
+    // SEG-016: acceder como otro usuario ("impersonar"). Solo ADMINISTRADOR,
+    // y nunca sobre sí mismo (no tendría efecto y complicaría volver()).
+    public function acceder(User $user, User $model): bool
+    {
+        return $user->hasRole(config('app.ROLE_ADMIN')) && $user->isNot($model);
+    }
 }
