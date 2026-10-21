@@ -577,7 +577,7 @@
 **Comportamiento nuevo:** bloque compartido `resources/views/cartas/partials/pdf-boletas.blade.php` (todas las imágenes en filas de 2; cada fila es un bloque que no se corta; el título "Boletas" va con la primera fila; las imágenes conservan su proporción; si no hay imágenes, no se muestra el bloque) y `resources/views/cartas/partials/pdf-foto.blade.php` (foto como `<img>` que entra en el recuadro sin deformarse). La imagen de reemplazo pasa a ser `img/no_carta_imagen.png`, que sí existe. En Presentación, el recuadro de la foto del niño pasa de 400×300 a 400×500, igual al de familia, porque la fila ya medía 500 de alto.
 **Impacto Web:** solo cambia el aspecto del PDF (ver/descargar). **Impacto API:** ninguno. **Impacto móvil:** ninguno (la app descarga el mismo PDF).
 **Pruebas:** `tests/Feature/Cartas/PdfCartaPlantillasTest.php` (5 casos). PDF reales generados con wkhtmltopdf para los 4 tipos, con texto corto y largo y con 3 y 10 imágenes, revisados visualmente.
-**Estado:** **Resuelto** (2026-10-21, rama `feature/docker-desarrollo-local`).
+**Estado:** **Resuelto** (2026-10-21, rama `feature/docker-desarrollo-local`). **Actualizado** el mismo día en la rama `ux/pdf-cartas-diseno`: fotos y boletas sin fondo de color, con marco y sombra, y títulos centrados (`pdf-fotos.blade.php` reemplaza a `pdf-foto.blade.php`; ver changelog).
 
 ---
 

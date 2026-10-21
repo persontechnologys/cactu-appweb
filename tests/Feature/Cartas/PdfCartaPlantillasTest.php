@@ -82,7 +82,9 @@ class PdfCartaPlantillasTest extends TestCase
         $this->assertCount(5, $this->filasDeBoletas($html));
         $this->assertMatchesRegularExpression('/\.boletas-pdf-fila\s*\{[^}]*page-break-inside:\s*avoid/', $html);
         // El título va dentro de la primera fila, así no queda solo al final de una hoja.
-        $this->assertSame(1, substr_count($html, '<h4>Boletas</h4>'));
+        $this->assertSame(1, substr_count($html, '>Boletas</span>'));
+        $filas = $this->filasDeBoletas($html);
+        $this->assertStringContainsString('>Boletas</span>', $filas[0]);
     }
 
     public function test_sin_imagenes_no_se_muestra_el_bloque_de_boletas(): void
@@ -90,7 +92,7 @@ class PdfCartaPlantillasTest extends TestCase
         $carta = $this->cartaDePrueba('Agradecimiento', 0);
         $carta->archivo_imagen = null;
 
-        $this->assertStringNotContainsString('<h4>Boletas</h4>', $this->renderizar($carta));
+        $this->assertStringNotContainsString('>Boletas</span>', $this->renderizar($carta));
     }
 
     public function test_las_fotos_del_ninio_son_img_y_no_fondos_con_tamano_forzado(): void
@@ -115,5 +117,21 @@ class PdfCartaPlantillasTest extends TestCase
             $this->assertStringNotContainsString('images/no-carta-imagen.png', $html, "Tipo $tipo");
         }
         $this->assertFileExists(public_path('img/no_carta_imagen.png'));
+    }
+
+    public function test_fotos_y_boletas_van_sin_fondo_de_color_con_marco_y_titulo_centrado(): void
+    {
+        $colores = ['Iniciada' => '#18b2ce', 'Agradecimiento' => '#3fa855', 'Contestación' => '#26b686', 'Presentación' => '#cbd818'];
+
+        foreach ($colores as $tipo => $color) {
+            $html = $this->renderizar($this->cartaDePrueba($tipo, 1));
+
+            // Título "Aquí está mi foto" fuera de la imagen, con el color de la plantilla.
+            $this->assertMatchesRegularExpression('~background: '.preg_quote($color, '~').';[^>]*>Aquí está mi foto</span>~', $html, "Tipo $tipo");
+            // La foto va en un marco con sombra, ya no como fondo de una celda.
+            $this->assertMatchesRegularExpression('#box-shadow:[^>]*>\s*<img src="[^"]*archivo_imagen_ninio/1\.jpg"#', $html, "Tipo $tipo");
+            // Las boletas van sin fondo de color.
+            $this->assertMatchesRegularExpression('#table\.boletas-pdf-tabla\s*\{[^}]*background: none#', $html, "Tipo $tipo");
+        }
     }
 }

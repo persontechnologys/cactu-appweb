@@ -160,33 +160,21 @@
 
         </div>
 
-        <div class="imagen-del-ninio" style="padding-bottom: 5px;">
-            <table style="width: auto;">
-                <tr>
-                    <th>
-                        Aquí está mi foto
-                    </th>
-                    @if ($carta->archivo_familia_ninio)
-                        <th>
-                            Esta es mi familia
-                        </th>
-                    @endif
+        @php
+            $fotosCarta = [];
+            if ($carta->archivo_imagen_ninio) {
+                $fotosCarta[] = ['titulo' => 'Aquí está mi foto', 'ruta' => $carta->archivo_imagen_ninio_link];
+            }
+            if ($carta->archivo_familia_ninio) {
+                $fotosCarta[] = ['titulo' => 'Esta es mi familia', 'ruta' => $carta->archivo_familia_ninio_link];
+            }
+        @endphp
+        @if (count($fotosCarta) > 0)
+            @include('cartas.partials.pdf-fotos', ['fotos' => $fotosCarta, 'ancho' => 300, 'alto' => 400, 'color' => '#cbd818', 'colorTexto' => '#3b3f00'])
+        @endif
 
-                </tr>
-                <tr>
-                    @if ($carta->archivo_imagen_ninio)
-                        @include('cartas.partials.pdf-foto', ['ruta' => $carta->archivo_imagen_ninio_link, 'ancho' => 400, 'alto' => 500, 'estilo' => 'border: 3px solid #cbd818;'])
-                    @endif
-                    
-                    @if ($carta->archivo_familia_ninio)
-                        @include('cartas.partials.pdf-foto', ['ruta' => $carta->archivo_familia_ninio_link, 'ancho' => 400, 'alto' => 500, 'estilo' => 'border: 3px solid #cbd818;'])
-                    @endif
-                </tr>
-            </table>
-        </div>
-
-        <div class="cuerpo">
-            @include('cartas.partials.pdf-boletas', ['carta' => $carta])
+        <div class="seccion-boletas">
+            @include('cartas.partials.pdf-boletas', ['carta' => $carta, 'color' => '#cbd818', 'colorTexto' => '#3b3f00'])
         </div>
 
         <div class="provincia-img">

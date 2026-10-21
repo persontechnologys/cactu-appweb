@@ -651,3 +651,19 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 **Archivos:** `resources/views/cartas/pdf-{iniciada,agradecimiento,contestacion,presentacion}.blade.php`, `resources/views/cartas/partials/pdf-boletas.blade.php` (nuevo), `resources/views/cartas/partials/pdf-foto.blade.php` (nuevo), `resources/views/responder-cartas/*.blade.php` (5 vistas), `resources/views/responder-cartas/partials/camara-config.blade.php` (nuevo), `app/Actions/GuardarRespuestaCartaAction.php`, `app/Http/Controllers/ResponderCartaController.php`, `tests/Feature/Cartas/PdfCartaPlantillasTest.php` (nuevo), `tests/Unit/Actions/ResponderCartaAccionesTest.php`, `tests/Feature/Cartas/ResponderCartaWebTest.php`, `docs/movil/cambios-requeridos.md`.
 **Impacto Web:** mejor PDF y fotos web más nítidas. **Impacto API:** sin cambios de contrato (mismos campos, mismas respuestas). **Impacto React Native:** ninguno; la baja resolución de la app (`MOVIL-001`) queda pendiente de autorización del cliente.
 **Pruebas:** suite completa 101/101 en verde (94 + 7 nuevos). PDF reales generados para los 4 tipos con varios escenarios y revisados visualmente. Todas las vistas compilan. **Pendiente:** probar la cámara web en un celular real.
+
+---
+
+## 2026-10-21 — UX PDF de cartas: fotos y boletas sin fondo, con marco y sombra, y títulos centrados
+
+**Rama:** `ux/pdf-cartas-diseno`
+**Motivo:** pedido del usuario: el fondo de color detrás de las boletas y de la foto "se visualiza feo"; los títulos deben ir fuera de la imagen, centrados y con decoración.
+**Cambio:**
+- Nuevo `cartas/partials/pdf-titulo-seccion.blade.php`: etiqueta redondeada centrada con el color de cada plantilla y una línea fina a cada lado. La usan "Aquí está mi foto", "Esta es mi familia" y "Boletas".
+- Nuevo `cartas/partials/pdf-fotos.blade.php`: la foto va en un marco blanco con esquinas redondeadas y sombra suave, sin fondo de color. Reemplaza a `pdf-foto.blade.php` (eliminado, ya no lo usaba nada).
+- `cartas/partials/pdf-boletas.blade.php`: sin fondo de color; cada imagen en un marco con sombra; título centrado con el mismo estilo.
+- Colores por plantilla: Iniciada `#18b2ce`, Agradecimiento `#3fa855`, Contestación `#26b686` y Presentación `#cbd818` (con texto oscuro `#3b3f00` para que se lea).
+**Notas técnicas (wkhtmltopdf 0.12):** `box-shadow` y `border-radius` se dibujan bien, y la sombra va como capa aparte: la foto mantiene su resolución original dentro del PDF (verificado con `pdfimages`). `letter-spacing` en un `inline-block` hace que el texto se corte (el ancho se calcula sin el espaciado), por eso los títulos no lo usan. Los títulos no usan tabla, porque una tabla de ancho automático apretaba la etiqueta.
+**Archivos:** las 4 plantillas `cartas/pdf-*.blade.php`, los 3 bloques de `cartas/partials/` y `tests/Feature/Cartas/PdfCartaPlantillasTest.php` (1 caso nuevo y 2 ajustados).
+**Impacto Web:** solo el aspecto del PDF. **Impacto API / React Native:** ninguno.
+**Pruebas:** suite completa 102/102 en verde. PDF reales de los 4 tipos (texto corto y largo, 3 y 10 imágenes) revisados visualmente.

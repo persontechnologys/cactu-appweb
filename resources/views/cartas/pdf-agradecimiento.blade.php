@@ -142,24 +142,9 @@
             <br>
             {!! $carta->detalle !!}
         </div>
-        <center>
-            <div class="cuerpo">
-                <div class="imagen_del_ninio">
-                    <table style="width: auto;">
-                        <tr>
-                            <th>Aquí está mi foto</th>
-                        
-                        </tr>
-                        <tr>
-                            @include('cartas.partials.pdf-foto', ['ruta' => $carta->archivo_imagen_ninio_link, 'ancho' => 300, 'alto' => 400])
-                            
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </center>
-        <div class="cuerpo">
-            @include('cartas.partials.pdf-boletas', ['carta' => $carta])
+        @include('cartas.partials.pdf-fotos', ['fotos' => [['titulo' => 'Aquí está mi foto', 'ruta' => $carta->archivo_imagen_ninio_link]], 'ancho' => 300, 'alto' => 400, 'color' => '#3fa855'])
+        <div class="seccion-boletas">
+            @include('cartas.partials.pdf-boletas', ['carta' => $carta, 'color' => '#3fa855'])
         </div>
 
         <div class="imagen_del_ninio">
