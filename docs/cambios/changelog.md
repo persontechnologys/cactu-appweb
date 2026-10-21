@@ -667,3 +667,23 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 **Archivos:** las 4 plantillas `cartas/pdf-*.blade.php`, los 3 bloques de `cartas/partials/` y `tests/Feature/Cartas/PdfCartaPlantillasTest.php` (1 caso nuevo y 2 ajustados).
 **Impacto Web:** solo el aspecto del PDF. **Impacto API / React Native:** ninguno.
 **Pruebas:** suite completa 102/102 en verde. PDF reales de los 4 tipos (texto corto y largo, 3 y 10 imágenes) revisados visualmente.
+
+---
+
+## 2026-10-21 — PDF de cartas: sin hojas vacías al final y sin línea gris junto a las fotos (`PDF-004`)
+
+**Rama:** `ux/pdf-sin-hojas-vacias`
+**Motivo:** un PDF real de producción (carta de Contestación) salió con una 3.ª hoja que solo tenía la línea verde de abajo del marco, y con una línea gris fina a la derecha de la foto y de la boleta.
+**Causa (reproducida localmente variando el alto del contenido):**
+- Agradecimiento y Contestación: el borde inferior (5 px) y el margen interno inferior (20 px) del `.contenedor`, más su `box-shadow` de 10 px por fuera, pasaban solos a una hoja nueva cuando el contenido llenaba justo la hoja.
+- Presentación: `.contenedor` tenía un alto fijo de 1290 px y el borde del recuadro de la provincia se partía entre hojas; su última línea quedaba sola.
+- Línea gris: wkhtmltopdf guarda `box-shadow` como una imagen semitransparente, y algunos visores (Chrome, Acrobat) dibujan su borde. `pdftoppm` no la muestra, por eso no se vio en las pruebas anteriores.
+**Cambio:**
+- Agradecimiento y Contestación: el contenedor ya no tiene borde ni margen abajo; el último bloque (texto final + pie) va en `.cierre-carta`, que no se corta y lleva el borde inferior del marco. La línea final siempre va junto al contenido. Se quita el `box-shadow` del contenedor.
+- Presentación: sin alto fijo; `.provincia-img` no se corta.
+- Las 4 plantillas: `body` y contenedor sin margen inferior sobrante.
+- Nuevo `cartas/partials/pdf-marco.blade.php`: marco con sombra hecha de 3 anillos de borde gris (vectoriales, sin imagen). Lo usan `pdf-fotos` y `pdf-boletas`, que dejan de usar `box-shadow`.
+**Archivos:** las 4 plantillas `cartas/pdf-*.blade.php`, `cartas/partials/pdf-marco.blade.php` (nuevo), `cartas/partials/pdf-fotos.blade.php`, `cartas/partials/pdf-boletas.blade.php`, `tests/Feature/Cartas/PdfCartaPlantillasTest.php` (2 casos nuevos y 1 ajustado).
+**Impacto Web:** PDF sin hojas vacías y sin línea gris. **Impacto API / React Native:** ninguno.
+**Pruebas:** 68 PDF reales (4 tipos × 17 altos de contenido). Antes, 3 de ellos terminaban en una hoja casi vacía; después, ninguno. Las cartas que ahora tienen 3 hojas llevan en la 3.ª el bloque final real (texto + pie). Suite completa 104/104 en verde.
+**Límite conocido:** si la fila de boletas o el bloque final no caben en lo que queda de una hoja, pasan enteros a la siguiente y dejan espacio libre. Es lo que evita que se corten.

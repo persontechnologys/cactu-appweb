@@ -10,6 +10,8 @@
         
         body {
             font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+            /* Sin margen abajo: un margen sobrante al final puede crear una hoja vacía. */
+            margin: 8px 8px 0 8px;
         }
 
         .contenedor {
@@ -17,9 +19,10 @@
             background-repeat: no-repeat;
             background-size: 100% 1350px;
             width: 100%;
-            height: 1290px;
+            /* Antes tenía un alto fijo (1290 px): el alto no dependía del contenido
+               y podía dejar un trozo del recuadro solo en una hoja nueva. */
             border-radius: 100%;
-            padding: 20px;
+            padding: 20px 20px 0 20px;
             box-sizing: border-box;
             font-family: 'Handlee', cursive;
         }
@@ -88,6 +91,10 @@
         .provincia-img {
             width: 100%;
             border: 3px solid #cbd818; /* Borde alrededor de la imagen de provincia */
+            /* Va entero en una hoja: si se partía, la línea de abajo del borde
+               quedaba sola en una hoja nueva. */
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
 
         .bottom-arrow {

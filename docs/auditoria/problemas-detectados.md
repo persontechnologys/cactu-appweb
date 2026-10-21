@@ -616,3 +616,17 @@
 **Severidad:** ALTO
 **Detalle:** ver `docs/movil/cambios-requeridos.md` #19. El backend no baja la resolución (verificado: una foto de 3000×4000 entra al PDF en 3000×4000).
 **Estado:** **Pendiente** — requiere autorización del cliente y una nueva versión en Google Play.
+
+---
+
+**ID:** PDF-004
+**Módulo:** Cartas / PDF
+**Problema:** algunos PDF de cartas terminaban en una hoja vacía (solo con la línea de abajo del marco), y aparecía una línea gris fina junto a la foto y las boletas
+**Tipo:** UX/UI
+**Severidad:** MEDIO
+**Archivos afectados:** `resources/views/cartas/pdf-*.blade.php`, `resources/views/cartas/partials/pdf-{fotos,boletas}.blade.php`
+**Comportamiento anterior:** cuando el contenido llenaba justo la hoja, el borde inferior y el margen del recuadro (y en Presentación, el alto fijo de 1290 px o el borde partido de la imagen de provincia) se pasaban solos a una hoja nueva. La sombra `box-shadow` se guardaba como imagen semitransparente y algunos visores dibujaban su borde como una línea gris.
+**Comportamiento nuevo:** la línea final del marco va con el último bloque (`.cierre-carta`, que no se corta); sin alto fijo ni márgenes sobrantes al final; sombra hecha con bordes (`pdf-marco`). Ver changelog.
+**Impacto Web:** solo el PDF. **Impacto API / móvil:** ninguno.
+**Pruebas:** 68 PDF reales sin hojas vacías; tests en `PdfCartaPlantillasTest`.
+**Estado:** **Resuelto** (2026-10-21, rama `ux/pdf-sin-hojas-vacias`). Pendiente: confirmar en producción con un PDF real.

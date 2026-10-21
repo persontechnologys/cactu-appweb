@@ -10,6 +10,8 @@
     <style>
         body {
             font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+            /* Sin margen abajo: un margen sobrante al final puede crear una hoja vacía. */
+            margin: 8px 8px 0 8px;
         }
 
         .contenedor {
@@ -17,8 +19,22 @@
             margin: 0 auto;
             padding: 20px;
             background-color: #ffffff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border: 5px solid #3fa855; /* Borde verde de 5px */
+            /* El borde de abajo y el margen inferior los pone .cierre-carta. Si
+               fueran del contenedor, cuando el contenido llena justo la hoja
+               pasarían solos a una hoja nueva, que quedaría vacía. */
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        /* Último bloque de la carta (texto final + pie). No se corta, y lleva el
+           borde de abajo del marco: la línea final siempre va junto al contenido. */
+        .cierre-carta {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin: 0 -25px;
+            padding: 0 25px 20px 25px;
+            border-bottom: 5px solid #3fa855;
         }
 
         .imagen_del_ninio img {
@@ -147,18 +163,20 @@
             @include('cartas.partials.pdf-boletas', ['carta' => $carta, 'color' => '#3fa855'])
         </div>
 
-        <div class="imagen_del_ninio">
-            <p>With this letter, you will notice something is different that we are very excited about. We have
-                introduced the use of tablets and cell phones that allow children to express themselves in their letters
-                to you by not just writing, but also by taking photos of them and their drawings. We hope you enjoy this
-                new kind of letter as much as children are enjoying creating them, and learning about technology in the
-                process. Make sure you write back to your sponsor child and keep the conversation going!</p>
-        </div>
+        <div class="cierre-carta">
+            <div class="imagen_del_ninio">
+                <p>With this letter, you will notice something is different that we are very excited about. We have
+                    introduced the use of tablets and cell phones that allow children to express themselves in their letters
+                    to you by not just writing, but also by taking photos of them and their drawings. We hope you enjoy this
+                    new kind of letter as much as children are enjoying creating them, and learning about technology in the
+                    process. Make sure you write back to your sponsor child and keep the conversation going!</p>
+            </div>
 
-        <hr>
+            <hr>
 
-        <div class="imagen_del_ninio">
-            <img src="{{ public_path('caratulas/pie-agradecimiento.png') }}" class="footer">
+            <div class="imagen_del_ninio">
+                <img src="{{ public_path('caratulas/pie-agradecimiento.png') }}" class="footer">
+            </div>
         </div>
     </div>
 </body>

@@ -7,7 +7,7 @@
     - Cada fila es un bloque propio con "no cortar", así una imagen nunca queda
       partida entre dos hojas y el bloque no salta entero a la hoja siguiente.
     - Sin fondo de color: cada imagen va en un marco blanco con esquinas
-      redondeadas y sombra suave, igual que la foto del niño (pdf-fotos).
+      redondeadas y sombra suave (pdf-marco), igual que la foto del niño.
     - Las imágenes conservan su proporción: max-width/max-height con tamaño
       automático. wkhtmltopdf 0.12 no soporta object-fit.
 
@@ -48,24 +48,6 @@
             background: none;
         }
 
-        .boletas-pdf-marco {
-            display: inline-block;
-            padding: 6px;
-            background: #ffffff;
-            border-radius: 12px;
-            -webkit-box-shadow: 0 5px 14px rgba(0, 0, 0, 0.25);
-            box-shadow: 0 5px 14px rgba(0, 0, 0, 0.25);
-        }
-
-        .boletas-pdf-marco img {
-            display: block;
-            width: auto;
-            height: auto;
-            max-width: 290px;
-            max-height: 200px;
-            margin: 0;
-            border-radius: 8px;
-        }
     </style>
 
     @foreach ($imagenesBoletas->chunk(2) as $fila)
@@ -79,9 +61,7 @@
                 <tr>
                     @foreach ($fila as $ruta)
                         <td class="boletas-pdf-celda">
-                            <div class="boletas-pdf-marco">
-                                <img src="{{ public_path($ruta ?? 'img/no_carta_imagen.png') }}">
-                            </div>
+                            @include('cartas.partials.pdf-marco', ['ruta' => $ruta, 'ancho' => 290, 'alto' => 200])
                         </td>
                     @endforeach
                     @if ($fila->count() === 1)

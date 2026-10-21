@@ -9,6 +9,8 @@
     <style>
         body {
             font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+            /* Sin margen abajo: un margen sobrante al final puede crear una hoja vacía. */
+            margin: 8px 8px 0 8px;
         }
 
         .contenedor {
@@ -18,7 +20,8 @@
             width: 100%;
             max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
+            /* Sin margen interno abajo: si sobra espacio al final, puede crear una hoja vacía. */
+            padding: 20px 20px 0 20px;
             box-sizing: border-box;
             font-family: 'Handlee', cursive;
         }

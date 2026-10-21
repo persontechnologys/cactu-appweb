@@ -128,10 +128,43 @@ class PdfCartaPlantillasTest extends TestCase
 
             // Título "Aquí está mi foto" fuera de la imagen, con el color de la plantilla.
             $this->assertMatchesRegularExpression('~background: '.preg_quote($color, '~').';[^>]*>Aquí está mi foto</span>~', $html, "Tipo $tipo");
-            // La foto va en un marco con sombra, ya no como fondo de una celda.
-            $this->assertMatchesRegularExpression('#box-shadow:[^>]*>\s*<img src="[^"]*archivo_imagen_ninio/1\.jpg"#', $html, "Tipo $tipo");
+            // La foto va en un marco (pdf-marco), ya no como fondo de una celda.
+            $this->assertMatchesRegularExpression('#background: \#ffffff; border-radius: 14px;">\s*<img src="[^"]*archivo_imagen_ninio/1\.jpg"#', $html, "Tipo $tipo");
             // Las boletas van sin fondo de color.
             $this->assertMatchesRegularExpression('#table\.boletas-pdf-tabla\s*\{[^}]*background: none#', $html, "Tipo $tipo");
+        }
+    }
+
+    public function test_ninguna_plantilla_usa_box_shadow(): void
+    {
+        // wkhtmltopdf guarda box-shadow como una imagen semitransparente y
+        // algunos visores dibujan una línea gris en su borde (visto en un PDF
+        // real de producción). La sombra del marco se hace con bordes (pdf-marco).
+        foreach (self::TIPOS as $tipo) {
+            $html = $this->renderizar($this->cartaDePrueba($tipo, 1));
+
+            $this->assertStringNotContainsString('box-shadow:', $html, "Tipo $tipo");
+        }
+    }
+
+    public function test_el_final_de_la_carta_no_deja_bordes_ni_margenes_sueltos_que_creen_una_hoja_vacia(): void
+    {
+        foreach (['Agradecimiento' => '#3fa855', 'Contestación' => '#26b686'] as $tipo => $color) {
+            $html = $this->renderizar($this->cartaDePrueba($tipo, 1));
+
+            // El contenedor ya no tiene borde ni margen abajo...
+            $this->assertMatchesRegularExpression('/\.contenedor\s*\{[^}]*border-bottom: none;[^}]*padding-bottom: 0;/', $html, "Tipo $tipo");
+            // ...los pone el último bloque, que no se corta: la línea final va siempre con el pie.
+            $this->assertMatchesRegularExpression('/\.cierre-carta\s*\{[^}]*page-break-inside: avoid;[^}]*border-bottom: 5px solid '.preg_quote($color, '/').'/', $html, "Tipo $tipo");
+            $this->assertMatchesRegularExpression('#<div class="cierre-carta">.*With this letter.*pie-agradecimiento\.png#s', $html, "Tipo $tipo");
+        }
+
+        $presentacion = $this->renderizar($this->cartaDePrueba('Presentación', 1));
+        $this->assertDoesNotMatchRegularExpression('/\.contenedor\s*\{[^}]*height: 1290px/', $presentacion);
+        $this->assertMatchesRegularExpression('/\.provincia-img\s*\{[^}]*page-break-inside: avoid/', $presentacion);
+
+        foreach (self::TIPOS as $tipo) {
+            $this->assertStringContainsString('margin: 8px 8px 0 8px;', $this->renderizar($this->cartaDePrueba($tipo, 1)), "Tipo $tipo");
         }
     }
 }

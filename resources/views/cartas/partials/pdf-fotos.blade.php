@@ -2,9 +2,8 @@
     Fotos del niño (y de su familia, en Presentación) en el PDF de una carta.
 
     Cada foto lleva encima su título decorativo y va en un marco blanco con
-    esquinas redondeadas y sombra suave, sin fondo de color. La foto conserva
-    su proporción y entra en el recuadro máximo ($ancho × $alto). La sombra se
-    dibuja aparte y no baja la resolución de la foto dentro del PDF.
+    esquinas redondeadas y sombra suave (pdf-marco), sin fondo de color. La foto
+    conserva su proporción y entra en el recuadro máximo ($ancho × $alto).
 
     El bloque completo no se corta entre hojas.
 
@@ -19,10 +18,7 @@
             @foreach ($fotos as $foto)
                 <td style="width: auto; height: auto; padding: 0 12px; vertical-align: top; text-align: center; background: none;">
                     @include('cartas.partials.pdf-titulo-seccion', ['texto' => $foto['titulo'], 'color' => $color, 'colorTexto' => $colorTexto ?? null])
-                    <div style="display: inline-block; padding: 7px; background: #ffffff; border-radius: 14px; -webkit-box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);">
-                        <img src="{{ public_path($foto['ruta'] ?? 'img/no_carta_imagen.png') }}"
-                             style="display: block; width: auto; height: auto; max-width: {{ $ancho }}px; max-height: {{ $alto }}px; margin: 0; border-radius: 9px;">
-                    </div>
+                    @include('cartas.partials.pdf-marco', ['ruta' => $foto['ruta'], 'ancho' => $ancho, 'alto' => $alto])
                 </td>
             @endforeach
         </tr>
