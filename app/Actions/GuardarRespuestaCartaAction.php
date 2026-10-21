@@ -28,16 +28,14 @@ class GuardarRespuestaCartaAction
     ): Carta {
         return DB::transaction(function () use ($carta, $detalle, $imagen, $fotoFamilia) {
             if ($imagen) {
-                $extension = $imagen->getClientOriginalExtension();
                 $carta->archivo_imagen_ninio = Storage::putFileAs(
-                    'public/cartas/archivo_imagen_ninio', $imagen, $carta->id.'.'.$extension
+                    'public/cartas/archivo_imagen_ninio', $imagen, $carta->id.'.'.$this->extensionReal($imagen)
                 );
             }
 
             if ($fotoFamilia) {
-                $extensionFamilia = $fotoFamilia->getClientOriginalExtension();
                 $carta->archivo_familia_ninio = Storage::putFileAs(
-                    'public/cartas/archivo_familia_ninio', $fotoFamilia, $carta->id.'.'.$extensionFamilia
+                    'public/cartas/archivo_familia_ninio', $fotoFamilia, $carta->id.'.'.$this->extensionReal($fotoFamilia)
                 );
             }
 
@@ -50,5 +48,22 @@ class GuardarRespuestaCartaAction
 
             return $carta;
         });
+    }
+
+    /**
+     * Extensión según el contenido real del archivo, no según el nombre que
+     * manda el cliente. CactuApp envía JPEG con el nombre "personal.png", y
+     * antes se guardaba como .png. Si el servidor no puede detectar el tipo
+     * (sin fileinfo), se usa la extensión del nombre, como antes.
+     */
+    private function extensionReal(UploadedFile $archivo): string
+    {
+        try {
+            $extension = $archivo->guessExtension();
+        } catch (\LogicException) {
+            $extension = null;
+        }
+
+        return $extension ?: $archivo->getClientOriginalExtension();
     }
 }

@@ -560,3 +560,59 @@
 **Impacto Web:** un ADMINISTRADOR gana la opción "Acceder" en `/usuarios`; ningún otro rol la ve ni puede invocar la ruta directamente. **Impacto API:** ninguno — funcionalidad exclusiva del panel web. **Impacto React Native:** ninguno.
 **Pruebas:** `tests/Feature/Seguridad/ImpersonacionTest.php` (6 casos): un GESTOR no puede acceder como otro usuario (403); un ADMINISTRADOR sí puede (login cambia, `impersonador_id` queda en sesión, banner visible); un ADMINISTRADOR no puede acceder como sí mismo (403); no se puede anidar una impersonación; se puede volver a la cuenta real y el panel de usuarios vuelve a estar disponible; `volver()` sin impersonación activa no falla. Render real vía `tinker` confirmando que el link "Acceder" aparece para otros usuarios y se oculta en la fila del propio administrador. Suite completa: 94/94 en verde (88 + 6 nuevos).
 **Estado:** **Resuelto** (2026-08-26).
+
+---
+
+**ID:** PDF-002
+**Módulo:** Cartas / PDF
+**Problema:** en los PDF de cartas, las boletas se salían de la hoja, las fotos se deformaban y los bloques de imágenes se cortaban entre dos hojas
+**Tipo:** BUG / UX/UI
+**Severidad:** ALTO (afecta el documento final que recibe el patrocinador)
+**Archivos afectados:** `resources/views/cartas/pdf-iniciada.blade.php`, `pdf-agradecimiento.blade.php`, `pdf-contestacion.blade.php`, `pdf-presentacion.blade.php`
+**Comportamiento anterior:**
+1. El salto de fila de la tabla de boletas solo contaba las boletas, no la imagen principal de la carta (`archivo_imagen`). La primera fila quedaba con 3 imágenes y la tercera salía aplastada y cortada en el borde derecho.
+2. La regla "no cortar" estaba sobre el bloque completo. Con pocas boletas, el bloque saltaba entero a la hoja siguiente y dejaba un hueco en blanco. Si medía más que una hoja, se cortaba igual (con 9 boletas: recuadro vacío en la hoja 1).
+3. "Aquí está mi foto" y "Esta es mi familia" eran fondos de celda con `background-size: 300px 400px` / `100% 100%`, que deforman cualquier foto con otra proporción. Además, `.cuerpo img { width: 100%; max-height: 200px }` estiraba el ancho de las boletas verticales.
+4. Agradecimiento y Contestación usaban como imagen de reemplazo `images/no-carta-imagen.png`, que no existe.
+**Comportamiento nuevo:** bloque compartido `resources/views/cartas/partials/pdf-boletas.blade.php` (todas las imágenes en filas de 2; cada fila es un bloque que no se corta; el título "Boletas" va con la primera fila; las imágenes conservan su proporción; si no hay imágenes, no se muestra el bloque) y `resources/views/cartas/partials/pdf-foto.blade.php` (foto como `<img>` que entra en el recuadro sin deformarse). La imagen de reemplazo pasa a ser `img/no_carta_imagen.png`, que sí existe. En Presentación, el recuadro de la foto del niño pasa de 400×300 a 400×500, igual al de familia, porque la fila ya medía 500 de alto.
+**Impacto Web:** solo cambia el aspecto del PDF (ver/descargar). **Impacto API:** ninguno. **Impacto móvil:** ninguno (la app descarga el mismo PDF).
+**Pruebas:** `tests/Feature/Cartas/PdfCartaPlantillasTest.php` (5 casos). PDF reales generados con wkhtmltopdf para los 4 tipos, con texto corto y largo y con 3 y 10 imágenes, revisados visualmente.
+**Estado:** **Resuelto** (2026-10-21, rama `feature/docker-desarrollo-local`).
+
+---
+
+**ID:** PDF-003
+**Módulo:** Responder carta (web)
+**Problema:** la foto tomada con la cámara web salía de baja resolución (unos 640×480)
+**Tipo:** UX/UI
+**Severidad:** MEDIO
+**Archivos afectados:** `resources/views/responder-cartas/{iniciada,agradecimineto,contestacion,presentacion-mayores,presentacion-menores}.blade.php`
+**Comportamiento anterior:** `cameraPhoto.startCamera(FACING_MODES.ENVIRONMENT)` sin resolución, así que el navegador usaba la suya por defecto (normalmente 640×480). La foto se capturaba en PNG con `getDataUri({})`, lo que la hacía mucho más pesada.
+**Comportamiento nuevo:** configuración única en `resources/views/responder-cartas/partials/camara-config.blade.php`: resolución ideal 1920×1080 y captura en JPG con calidad 0.85.
+**Impacto Web:** fotos más nítidas y livianas. **Impacto API / móvil:** ninguno.
+**Pruebas:** las 5 vistas compilan (`view:cache`). Test nuevo en `ResponderCartaWebTest` para JPG en base64. **Pendiente:** probar en un celular real con el formulario web.
+**Estado:** **Resuelto** (2026-10-21), pendiente de prueba en dispositivo real.
+
+---
+
+**ID:** BUG-002
+**Módulo:** Responder carta (web + API)
+**Problema:** las fotos se guardaban con la extensión del nombre que envía el cliente, no con la de su contenido real
+**Tipo:** BUG
+**Severidad:** BAJO
+**Archivos afectados:** `app/Actions/GuardarRespuestaCartaAction.php`, `app/Http/Controllers/ResponderCartaController.php`
+**Comportamiento anterior:** CactuApp envía JPEG con el nombre `personal.png`, y se guardaba como `.png`. La web marcaba todo como `image/png`.
+**Comportamiento nuevo:** `GuardarRespuestaCartaAction::extensionReal()` usa la extensión detectada del contenido (`guessExtension()`); si el servidor no puede detectarla, usa la del nombre, como antes. La web toma el tipo de la cabecera del data URI.
+**Impacto Web/API:** solo cambia la extensión de los archivos **nuevos**. Los existentes no se renombran (la ruta guardada en la base sigue siendo válida). **Impacto móvil:** ninguno, la app no depende de la extensión.
+**Pruebas:** casos nuevos en `ResponderCartaAccionesTest` y `ResponderCartaWebTest`.
+**Estado:** **Resuelto** (2026-10-21).
+
+---
+
+**ID:** MOVIL-001
+**Módulo:** CactuApp / Responder carta
+**Problema:** la app reduce las fotos del niño y de la familia a 300×400 px antes de enviarlas
+**Tipo:** UX/UI
+**Severidad:** ALTO
+**Detalle:** ver `docs/movil/cambios-requeridos.md` #19. El backend no baja la resolución (verificado: una foto de 3000×4000 entra al PDF en 3000×4000).
+**Estado:** **Pendiente** — requiere autorización del cliente y una nueva versión en Google Play.

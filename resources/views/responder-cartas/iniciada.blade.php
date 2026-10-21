@@ -100,6 +100,7 @@
 
     @push('scriptsHeader')
     <script src="{{ asset('assets/js/jslib-html5-camera-photo.min.js') }}"></script>
+    @include('responder-cartas.partials.camara-config')
     @endpush
     @push('scripts')
 
@@ -116,7 +117,7 @@
 
         function startCamera(){
 
-            cameraPhoto.startCamera(FACING_MODES.ENVIRONMENT)
+            cameraPhoto.startCamera(FACING_MODES.ENVIRONMENT, CAMARA_RESOLUCION_IDEAL)
             .then(() => {
                 console.log('Camera started !');
                 estado_camara=true;
@@ -151,7 +152,7 @@
 
         // function called by the buttons.
         function takePhoto () {
-            const config = {};
+            const config = CAMARA_CONFIG_CAPTURA;
             let dataUri = cameraPhoto.getDataUri(config);
             imgElement.src = dataUri;
             var inputImagen = document.getElementById("inputImagen");

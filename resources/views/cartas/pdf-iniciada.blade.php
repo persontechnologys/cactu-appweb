@@ -118,48 +118,19 @@
                                 <th>Aquí está mi foto</th>
                             </tr>
                             <tr>
-                                <td style="background: url({!! public_path($carta->archivo_imagen_ninio_link??'img/no_carta_imagen.png') !!});
-                                    background-repeat: no-repeat;
-                                    background-size: contain;
-                                    background-size: 300px 400px;
-                                    background-position: center; 
-                                    width: 300px; 
-                                    height: 400px;
-                                ">
-                                </td>
+                                @include('cartas.partials.pdf-foto', ['ruta' => $carta->archivo_imagen_ninio_link, 'ancho' => 300, 'alto' => 400])
                             </tr>
                         </table>
                     </div>
                 </div>
             </center>
 
-            <div class="cuerpo imagen_del_ninio">
-                <h4>Boletas</h4>
-                <table>
-                    <tr>
-                        @if ($carta->archivo_imagen)
-                            <td>
-                                <img src="{{ public_path($carta->archivo_imagen_link??'img/no_carta_imagen.png') }}" />
-                            </td>
-                        @endif
-            
-                        @if ($carta->boletas->count() > 0)
-                            @foreach ($carta->boletas as $index => $boleta)
-                                <td>
-                                    <img src="{{ public_path($boleta->archivo_imagen_link??'img/no_carta_imagen.png') }}" />
-                                </td>
-                                @if (($index + 1) % 2 == 0)
-                                    </tr><tr>
-                                @endif
-                            @endforeach
-                        @endif
-                    </tr>
-                </table>
-            </div>
+            <div class="cuerpo">
+            @include('cartas.partials.pdf-boletas', ['carta' => $carta])
+        </div>
 
             <div class="imagen_del_ninio">
                 
-                <img style="width: 350px;" src="{{ public_path('img/cartas/ccagradecimiento.jpg') }}">
                 <p>With this letter, you will notice something is different that we are very excited
                     about. We have introduced the use of tablets and cell phones that allow children
                     to express themselves in their letters to you by not just writing, but also by taking

@@ -1,0 +1,3 @@
+# El código se monta como volumen; la imagen solo necesita docker/app/.
+*
+!docker/app/

@@ -45,9 +45,16 @@
 | 17 | Dos librerías distintas para HTTP con archivos (`react-native-blob-util` y `rn-fetch-blob`, este último sin mantenimiento activo) | Unificar en una sola librería | BAJO | Ninguna, pero requiere pruebas en descargas y envíos multipart antes de retirar la que se descarte |
 | 18 | `PresentacionMayores.js`, `PresentacionMenores.js` y `DescargarEliminar.js` (`eliminar-carta`) nunca revisan `result.error` — un `403 "No autorizado"` (p. ej. intentar responder/eliminar la carta de otro niño) falla en silencio: el spinner se detiene, sin toast ni navegación, igual que un `401`. Detectado al verificar Fase 5 (ARQ-006 Paso B, backend) contra el código real de las 6 pantallas que usan el patrón `errors/error/info/success` — ver `manejo-errores.md`. No es un problema nuevo introducido por el backend, ya existía. | Agregar `if (result.error) { toast(...) }` en las 3 pantallas, igual que ya hacen `Contestacion.js`/`Agradecimiento.js`/`Iniciada.js` | BAJO/MEDIO (el escenario que lo dispara — 403 en estos 3 endpoints — es infrecuente en uso normal, pero cuando ocurre el usuario no tiene ninguna pista de qué pasó) | Ninguna — cambio contenido en las 3 pantallas, no requiere tocar el backend |
 
+## FOTOS / CALIDAD DE IMAGEN
+
+| # | Problema | Acción requerida | Prioridad | Dependencias |
+|---|---|---|---|---|
+| 19 | **Fotos del niño y de la familia en solo 300×400 px** (`MOVIL-001`). Las 5 pantallas de respuesta (`Iniciada.js`, `Agradecimiento.js`, `Contestacion.js`, `PresentacionMayores.js`, `PresentacionMenores.js`) llaman a `ImagePicker.openCamera({ width: 300, height: 400, cropping: true, includeBase64: true })`. Con `react-native-image-crop-picker`, eso recorta **y reduce** la foto a 300×400 px antes de enviarla. Se confirmó con 3 fotos reales descargadas de producción (las 3 miden exactamente 300×400). En el PDF se ven borrosas: para su tamaño en el PDF (unos 8×10,5 cm) hacen falta unos 900×1200 px. La foto de familia (normalmente horizontal) además se recorta en vertical. | Subir el tamaño de salida a, por ejemplo, `width: 900, height: 1200` y agregar `compressImageQuality: 0.8` para que el archivo no crezca demasiado. Para la foto de familia, evaluar una proporción horizontal o `freeStyleCropEnabled: true`. De paso, enviar el archivo como `personal.jpg` en lugar de `personal.png`, porque el contenido es JPEG. | ALTO (calidad visible del producto final que recibe el patrocinador) | Requiere **nueva versión en Google Play** y autorización del cliente. Las fotos ya guardadas (300×400) no se pueden recuperar. El backend no necesita cambios: guarda y pone en el PDF la resolución que reciba (verificado con 3000×4000 px), y desde 2026-10-21 corrige la extensión según el contenido. |
+
 ## Resumen de prioridad
 
 ```text
+ALTO (1):   #19 fotos de 300×400 px (MOVIL-001, pendiente de autorización del cliente)
 MEDIO (6):  #1 token sin expirar/revocar, #8 sin logout en 401, #10 sin refresh de token FCM,
             #11 sin endpoint de actualización FCM, #15 sin cliente HTTP centralizado,
             #16 validación triplicada (depende de Fase 4 backend)
@@ -56,4 +63,4 @@ DEPENDE DE CONTEXTO (1): #14 (solo si hay distribución iOS)
 CERRADO (1): #12 un solo dispositivo por niño (backend resuelto 2026-08-08, `FIREBASE-002`, sin acción del lado móvil)
 ```
 
-Ningún hallazgo de esta lista alcanza severidad CRÍTICA/ALTA — los hallazgos críticos originales de la auditoría Fase 0 (SEG-001 a SEG-005) que involucraban al móvil (SEG-003, SEG-004, SEG-005) **ya fueron cerrados en el backend antes de esta auditoría cruzada** (ver `docs/cambios/changelog.md`) y no requirieron cambios en el cliente móvil, porque este siempre trató los IDs de PDF como opacos y el backend ahora ignora los identificadores que el cliente enviaba de más.
+Ningún hallazgo de esta lista alcanza severidad CRÍTICA, y el único ALTO es #19 (calidad de fotos, agregado 2026-10-21) — los hallazgos críticos originales de la auditoría Fase 0 (SEG-001 a SEG-005) que involucraban al móvil (SEG-003, SEG-004, SEG-005) **ya fueron cerrados en el backend antes de esta auditoría cruzada** (ver `docs/cambios/changelog.md`) y no requirieron cambios en el cliente móvil, porque este siempre trató los IDs de PDF como opacos y el backend ahora ignora los identificadores que el cliente enviaba de más.

@@ -175,60 +175,18 @@
                 </tr>
                 <tr>
                     @if ($carta->archivo_imagen_ninio)
-                        <td style="
-                            background: url({!! public_path($carta->archivo_imagen_ninio_link??'img/no_carta_imagen.png') !!});
-                            background-repeat: no-repeat;
-                            background-size: contain;
-                            background-size: 100% 100%;
-                            background-position: center; 
-                            width: 400px; 
-                            height:300px;
-                            border: 3px solid #cbd818;
-                        ">
-                            
-                        </td>    
+                        @include('cartas.partials.pdf-foto', ['ruta' => $carta->archivo_imagen_ninio_link, 'ancho' => 400, 'alto' => 500, 'estilo' => 'border: 3px solid #cbd818;'])
                     @endif
                     
                     @if ($carta->archivo_familia_ninio)
-                        <td style="
-                            background: url({!! public_path($carta->archivo_familia_ninio_link??'img/no_carta_imagen.png') !!});
-                            background-repeat: no-repeat;
-                            background-size: contain;
-                            background-size: 100% 100%;
-                            background-position: center; 
-                            width: 400px; 
-                            height:500px;
-                            border: 3px solid #cbd818;
-                        ">
-                            
-                        </td>
+                        @include('cartas.partials.pdf-foto', ['ruta' => $carta->archivo_familia_ninio_link, 'ancho' => 400, 'alto' => 500, 'estilo' => 'border: 3px solid #cbd818;'])
                     @endif
                 </tr>
             </table>
         </div>
 
-        <div class="cuerpo imagen_del_ninio">
-            <h4>Boletas</h4>
-            <table>
-                <tr>
-                    @if ($carta->archivo_imagen)
-                        <td>
-                            <img src="{{ public_path($carta->archivo_imagen_link??'img/no_carta_imagen.png') }}" />
-                        </td>
-                    @endif
-        
-                    @if ($carta->boletas->count() > 0)
-                        @foreach ($carta->boletas as $index => $boleta)
-                            <td>
-                                <img src="{{ public_path($boleta->archivo_imagen_link??'img/no_carta_imagen.png') }}" />
-                            </td>
-                            @if (($index + 1) % 2 == 0)
-                                </tr><tr>
-                            @endif
-                        @endforeach
-                    @endif
-                </tr>
-            </table>
+        <div class="cuerpo">
+            @include('cartas.partials.pdf-boletas', ['carta' => $carta])
         </div>
 
         <div class="provincia-img">

@@ -252,4 +252,32 @@ class ResponderCartaWebTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHasErrors('detalle');
     }
+
+    public function test_la_foto_jpg_de_la_camara_web_se_guarda_como_jpg(): void
+    {
+        Storage::fake('local');
+        Notification::fake();
+        $carta = $this->crearCartaPendiente();
+
+        // La cámara web ahora envía JPG (antes PNG).
+        $imagen = imagecreatetruecolor(4, 4);
+        ob_start();
+        imagejpeg($imagen);
+        $jpegBase64 = 'data:image/jpeg;base64,'.base64_encode(ob_get_clean());
+
+        $this->conSesionDe($carta->ninio)->post(route('cartas-ninio.guardar-contestacion'), [
+            'id' => Crypt::encryptString($carta->id),
+            'ninio' => Crypt::encryptString($carta->ninio->numero_child),
+            'imagen' => $jpegBase64,
+            'nombre_patrocinador' => 'Juan',
+            'agradezco_por' => 'la comida',
+            'te_cuento_que' => 'estoy bien',
+            'pregunta_al_patrocinador' => 'cómo estás',
+            'detalle' => 'un abrazo',
+        ])->assertRedirect(route('cartas-ninio.index'));
+
+        $carta->refresh();
+        $this->assertMatchesRegularExpression('/\.(jpg|jpeg)$/', $carta->archivo_imagen_ninio);
+        Storage::disk('local')->assertExists($carta->archivo_imagen_ninio);
+    }
 }

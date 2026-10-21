@@ -1,0 +1,34 @@
+# Entorno de desarrollo local de CACTU con Docker.
+# Producción (cPanel) NO usa este archivo. Guía: docs/infraestructura/docker-local.md
+#
+# Usa la red del host (network_mode: host) para conectarse al PostgreSQL
+# instalado en la PC en 127.0.0.1:5432, sin cambiar el .env.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    image: cactu-app:php8.4
+    network_mode: host
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      HOME: /tmp
+    volumes:
+      - ./:/var/www/html
+    command: php artisan serve --host=127.0.0.1 --port=8000
+
+  # Equivalente local al cron de cPanel (Laravel Scheduler: procesa la cola cada minuto).
+  # Opcional: docker compose --profile cola up -d
+  scheduler:
+    image: cactu-app:php8.4
+    network_mode: host
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      HOME: /tmp
+    volumes:
+      - ./:/var/www/html
+    command: php artisan schedule:work
+    depends_on:
+      - app
+    profiles: ["cola"]

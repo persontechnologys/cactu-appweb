@@ -613,3 +613,41 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 **Archivos:** `app/Policies/UserPolicy.php`, `app/Http/Controllers/UserController.php`, `routes/web.php`, `resources/views/components/tabla-acciones.blade.php`, `resources/views/usuarios/action.blade.php`, `resources/views/layouts/app.blade.php`, `tests/Feature/Seguridad/ImpersonacionTest.php` (nuevo).
 **Impacto Web:** nueva capacidad exclusiva de ADMINISTRADOR, visible solo para ese rol. **Impacto API:** ninguno — funcionalidad exclusiva del panel web (`CactuApp` no gestiona usuarios). **Impacto React Native:** ninguno.
 **Pruebas:** `tests/Feature/Seguridad/ImpersonacionTest.php` (6 casos nuevos): un GESTOR no puede iniciar una impersonación (403); un ADMINISTRADOR sí puede (la sesión cambia de usuario, `impersonador_id` queda guardado, el banner aparece en `home`); un ADMINISTRADOR no puede impersonarse a sí mismo (403); no se puede anidar una impersonación; se puede volver a la cuenta real y recuperar acceso a `/usuarios`; `volver()` sin impersonación activa no falla. Render real vía `tinker` confirmando que el link "Acceder" aparece para otros usuarios y se oculta en la fila propia del administrador. Suite completa: 94/94 en verde (88 + 6 nuevos). Base real sin cambios (solo lecturas de prueba, revertidas).
+
+---
+
+## 2026-10-21 — Infraestructura: entorno Docker para desarrollo local
+
+**Fase:** Infraestructura (fuera de las fases funcionales)
+**Rama:** `feature/docker-desarrollo-local`
+**Motivo:** la PC de desarrollo tiene PHP 8.5 y producción (cPanel) PHP 8.4. Docker permite trabajar con la misma versión de producción.
+
+**Cambio:** se agregan `compose.yaml` (servicios `app` y `scheduler` opcional), `docker/app/Dockerfile` (PHP 8.4 CLI + extensiones + librerías para wkhtmltopdf), `docker/app/php.ini` y `.dockerignore`. El PostgreSQL de la PC se usa vía `network_mode: host`, sin cambiar el `.env`. La imagen no trae Composer, para proteger el `vendor/` versionado del que depende cPanel.
+**Archivos:** `compose.yaml`, `docker/app/Dockerfile`, `docker/app/php.ini`, `.dockerignore`, `docs/infraestructura/docker-local.md` (todos nuevos).
+**Eliminados:** restos de Laravel Sail que no se usaban: `sail`, `docker/8.0/`, `docker/8.1/` y `docker/8.2/` (13 archivos, sin referencias en el proyecto). El paquete `laravel/sail` se mantiene en `composer.json` para no tocar `vendor/` ni `composer.lock`.
+**Impacto Web/API/React Native:** ninguno. No se modificó código de la aplicación, ni `vendor/`, ni `composer.lock`. cPanel ignora estos archivos.
+**Pruebas:** PHP 8.4.26 / Laravel 10.50.3 dentro del contenedor; conexión a PostgreSQL local; `GET /login` → 200; PDF real generado con wkhtmltopdf; suite completa 94/94 en verde.
+
+---
+
+## 2026-10-21 — PDF: quitar el logo/dirección de ChildFund (`ccagradecimiento`) de las cartas
+
+**Motivo:** lo pidió el cliente.
+**Cambio:** se quita la imagen `img/cartas/ccagradecimiento.jpg` (logo de ChildFund Ecuador con la dirección de Richmond, VA) que aparecía sobre el párrafo "With this letter, you will notice something is different..." en los PDF. El párrafo se mantiene. Se borran `public/img/cartas/ccagradecimiento.jpg` y `public/img/cartas/ccagradecimiento.png`; el `.png` no lo usaba nada.
+**Archivos:** `resources/views/cartas/pdf-iniciada.blade.php`, `resources/views/cartas/pdf-agradecimiento.blade.php`, `resources/views/cartas/pdf-contestacion.blade.php` (una línea menos en cada uno); las dos imágenes, eliminadas. Antes de borrarlas se buscaron referencias en todo el proyecto (vistas, JS, controllers, API) y no había otras.
+**Impacto Web/API/React Native:** solo cambia el contenido visual del PDF de las cartas Iniciada, Agradecimiento y Contestación (los genera `cartas.verpdf`, que también usan `WelcomeController` y la descarga desde la web). Presentación no usaba la imagen. Ni la API ni la app móvil la referencian.
+**Pruebas:** se generaron PDF de muestra de los 3 tipos con datos ficticios en memoria (sin tocar la base) y se revisaron visualmente: el párrafo queda sin la imagen y el resto del diseño no cambia. Suite completa en verde.
+
+---
+
+## 2026-10-21 — PDF de cartas: boletas en filas de 2, fotos sin deformar, sin cortes entre hojas, y cámara web en alta resolución
+
+**Motivo:** el cliente reportó fotos cortadas entre hojas y de baja calidad en los PDF. Fichas `PDF-002`, `PDF-003`, `BUG-002` y `MOVIL-001` en `docs/auditoria/problemas-detectados.md`.
+**Cambio:**
+- Bloques compartidos nuevos `cartas/partials/pdf-boletas.blade.php` y `cartas/partials/pdf-foto.blade.php`, usados por las 4 plantillas PDF. Antes la misma tabla estaba copiada 4 veces, con el mismo error.
+- La cámara web pide 1920×1080 y captura en JPG (`responder-cartas/partials/camara-config.blade.php`, usado por las 5 vistas).
+- La foto se guarda con la extensión de su contenido real (`GuardarRespuestaCartaAction::extensionReal()`); la web toma el tipo del data URI.
+**Comportamiento que cambia:** el título "Boletas" ya no aparece si la carta no tiene imágenes. En Presentación, el recuadro de la foto del niño pasa a 400×500 (antes 400×300 al lado de uno de 400×500). Los archivos nuevos que envía la app se guardan `.jpeg`/`.jpg` en lugar de `.png`.
+**Archivos:** `resources/views/cartas/pdf-{iniciada,agradecimiento,contestacion,presentacion}.blade.php`, `resources/views/cartas/partials/pdf-boletas.blade.php` (nuevo), `resources/views/cartas/partials/pdf-foto.blade.php` (nuevo), `resources/views/responder-cartas/*.blade.php` (5 vistas), `resources/views/responder-cartas/partials/camara-config.blade.php` (nuevo), `app/Actions/GuardarRespuestaCartaAction.php`, `app/Http/Controllers/ResponderCartaController.php`, `tests/Feature/Cartas/PdfCartaPlantillasTest.php` (nuevo), `tests/Unit/Actions/ResponderCartaAccionesTest.php`, `tests/Feature/Cartas/ResponderCartaWebTest.php`, `docs/movil/cambios-requeridos.md`.
+**Impacto Web:** mejor PDF y fotos web más nítidas. **Impacto API:** sin cambios de contrato (mismos campos, mismas respuestas). **Impacto React Native:** ninguno; la baja resolución de la app (`MOVIL-001`) queda pendiente de autorización del cliente.
+**Pruebas:** suite completa 101/101 en verde (94 + 7 nuevos). PDF reales generados para los 4 tipos con varios escenarios y revisados visualmente. Todas las vistas compilan. **Pendiente:** probar la cámara web en un celular real.

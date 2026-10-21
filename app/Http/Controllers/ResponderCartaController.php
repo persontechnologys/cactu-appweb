@@ -332,9 +332,9 @@ class ResponderCartaController extends Controller
 
             $this->authorize('responderCartaXninio', $carta);
 
-            $imagen = $this->crearArchivoTemporalDesdeBase64($request->input('imagen'), $carta->id.'.png');
+            $imagen = $this->crearArchivoTemporalDesdeBase64($request->input('imagen'), (string) $carta->id);
             $fotoFamilia = $request->foto_familia
-                ? $this->crearArchivoTemporalDesdeBase64($request->foto_familia, $carta->id.'.png')
+                ? $this->crearArchivoTemporalDesdeBase64($request->foto_familia, (string) $carta->id)
                 : null;
 
             try {
@@ -362,7 +362,7 @@ class ResponderCartaController extends Controller
         }
     }
 
-    private function crearArchivoTemporalDesdeBase64(string $imagenBase64, string $nombreArchivo): UploadedFile
+    private function crearArchivoTemporalDesdeBase64(string $imagenBase64, string $nombreBase): UploadedFile
     {
         $tempFolderPath = 'temp';
         if (!Storage::exists($tempFolderPath)) {
@@ -370,14 +370,19 @@ class ResponderCartaController extends Controller
         }
         $tempDirectoryPath = Storage::path($tempFolderPath);
 
-        [, $imagenCodificada] = explode(';', $imagenBase64);
+        [$cabecera, $imagenCodificada] = explode(';', $imagenBase64);
         [, $imagenCodificada] = explode(',', $imagenCodificada);
         $imagenDecodificada = base64_decode($imagenCodificada);
+
+        // El tipo real viene en la cabecera del data URI ("data:image/jpeg").
+        // La cámara web ahora envía JPG; antes todo se trataba como PNG.
+        $mime = str_replace('data:', '', $cabecera) === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+        $nombreArchivo = $nombreBase.($mime === 'image/jpeg' ? '.jpg' : '.png');
 
         $rutaTempImagen = $tempDirectoryPath.'/'.uniqid().'-'.$nombreArchivo;
         file_put_contents($rutaTempImagen, $imagenDecodificada);
 
-        return new UploadedFile($rutaTempImagen, $nombreArchivo, 'image/png', null, true);
+        return new UploadedFile($rutaTempImagen, $nombreArchivo, $mime, null, true);
     }
 
     private function eliminarSiExiste(string $rutaArchivo): void

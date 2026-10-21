@@ -304,4 +304,22 @@ class ResponderCartaAccionesTest extends TestCase
         $this->assertSame($esperado, $carta->refresh()->detalle);
         Storage::disk('local')->assertExists($carta->archivo_familia_ninio);
     }
+
+    public function test_la_foto_se_guarda_con_la_extension_de_su_contenido_y_no_la_del_nombre(): void
+    {
+        Storage::fake('local');
+        Notification::fake();
+        $carta = $this->crearCartaPendiente();
+
+        // CactuApp envía JPEG con el nombre "personal.png".
+        $jpegConNombrePng = UploadedFile::fake()->image('personal.png')->mimeType('image/jpeg');
+        $contenidoJpeg = UploadedFile::fake()->image('foto.jpg');
+        file_put_contents($jpegConNombrePng->getPathname(), file_get_contents($contenidoJpeg->getPathname()));
+
+        (new GuardarRespuestaCartaAction())->guardar($carta, 'detalle', $jpegConNombrePng, null);
+
+        $carta->refresh();
+        $this->assertMatchesRegularExpression('/\.(jpg|jpeg)$/', $carta->archivo_imagen_ninio);
+        Storage::disk('local')->assertExists($carta->archivo_imagen_ninio);
+    }
 }
